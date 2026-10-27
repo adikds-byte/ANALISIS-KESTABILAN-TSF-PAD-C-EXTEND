@@ -1,0 +1,2229 @@
+<!DOCTYPE html>
+<html lang="id" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEOSTUDIO SLOPE 2D & 3D PRO v9.5 — TSF PAD C EXTEND PT BUMI SUKSESINDO (BANYUWANGI)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        tech: ['Orbitron', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    colors: {
+                        geostudio: {
+                            base: '#020617',
+                            card: 'rgba(6, 16, 32, 0.94)',
+                            border: 'rgba(16, 185, 129, 0.38)',
+                            clGreen: '#22c55e',
+                            cmLightGreen: '#a3e635',
+                            chPurple: '#818cf8',
+                            accent: '#10b981',
+                            amber: '#f59e0b',
+                            cyan: '#06b6d4',
+                            rose: '#f43f5e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Chart.js, SheetJS (Excel), Leaflet WebGIS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <!-- Google Fonts & FontAwesome 6 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-main: #020617;
+            --bg-card: rgba(6, 16, 32, 0.94);
+            --bg-header: rgba(4, 12, 24, 0.96);
+            --border-color: rgba(16, 185, 129, 0.38);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        html:not(.dark) {
+            --bg-main: #f8fafc;
+            --bg-card: rgba(255, 255, 255, 0.96);
+            --bg-header: rgba(255, 255, 255, 0.96);
+            --border-color: rgba(16, 185, 129, 0.45);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+        }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .cmd-card {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border-color);
+            border-radius: 1rem;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.65);
+            transition: all 0.25s ease;
+        }
+        .cmd-card:hover {
+            border-color: rgba(52, 211, 153, 0.68);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+        }
+
+        .geostudio-grid {
+            background-color: #030c1c;
+            background-image:
+                linear-gradient(rgba(56, 189, 248, 0.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.12) 1px, transparent 1px),
+                linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+            background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+        }
+
+        .formula-box {
+            background: rgba(2, 6, 23, 0.88);
+            border-left: 3.5px solid #10b981;
+            padding: 7px 11px;
+            border-radius: 0 8px 8px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #6ee7b7;
+        }
+
+        .earth-viewport-circle {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1 / 1;
+        }
+        .earth-viewport-circle canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        .orbit-ring { position: absolute; border-radius: 50%; border: 2px dashed; pointer-events: none; }
+        .orbit-ring-1 { inset: -8px; border-color: rgba(6, 182, 212, 0.55) transparent rgba(6, 182, 212, 0.55) transparent; animation: spinRing 14s linear infinite; }
+        .orbit-ring-2 { inset: -16px; border-color: transparent rgba(16, 185, 129, 0.45) transparent rgba(245, 158, 11, 0.45); animation: spinRingRev 20s linear infinite; }
+        @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spinRingRev { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+
+        .capsule-font { display:inline-flex; align-items:center; gap:6px; border:1.5px solid #C6A664; border-radius:12px; background:rgba(30,25,10,.65); color:#fff; font-family:'JetBrains Mono',monospace; font-weight:700; padding:0 10px; height:36px; }
+        .btn-dam-tailing { display:inline-flex; align-items:center; gap:6px; border:1.5px solid #34d399; border-radius:12px; background:linear-gradient(135deg, rgba(6,78,59,.85), rgba(6,182,212,.25)); color:#a7f3d0; font-family:'JetBrains Mono',monospace; font-weight:800; padding:0 12px; height:36px; cursor:pointer; font-size:11px; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(2, 6, 23, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.5); border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative selection:bg-emerald-500 selection:text-slate-950 pb-20">
+
+    <!-- ========================================================================= -->
+    <!-- 0. BACKGROUND ORBIT BUMI 3D (THREE.JS)                                    -->
+    <!-- ========================================================================= -->
+    <div id="bgEarthContainer" class="fixed inset-0 z-0 pointer-events-none flex items-center justify-center opacity-20 overflow-hidden">
+        <div id="bgEarthCanvas" class="w-[min(85vw,85vh)] h-[min(85vw,85vh)] earth-viewport-circle"></div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 1. BOOT LOADING SCREEN 3D EARTH HUD                                       -->
+    <!-- ========================================================================= -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[10000] bg-slate-950 text-white flex flex-col items-center justify-between p-6 transition-opacity duration-700 select-none">
+        <div class="text-center mt-2 space-y-2 z-10">
+            <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 text-xs font-mono text-emerald-300 shadow-lg">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="loadingClock">Memuat Waktu Real-Time WIB...</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-300 to-amber-400 flex items-center justify-center gap-2.5 font-tech uppercase">
+                <i class="fa-solid fa-mountain-sun text-amber-400"></i> GEOSTUDIO SLOPE 2D &amp; 3D PRO v9.5
+            </h2>
+            <p class="text-xs text-slate-300 font-mono">Analisis Kestabilan TSF PAD C Extend — Decommissioning &amp; Breaching Dam 5 &amp; 6A PT Bumi Suksesindo, Banyuwangi</p>
+        </div>
+
+        <div class="relative w-64 h-64 sm:w-76 sm:h-76 flex items-center justify-center my-auto z-10">
+            <div class="orbit-ring orbit-ring-1"></div>
+            <div class="orbit-ring orbit-ring-2"></div>
+            <div id="loadingEarthCanvas" class="w-full h-full earth-viewport-circle"></div>
+            <div class="absolute inset-0 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none"></div>
+        </div>
+
+        <div class="w-full max-w-md text-center mb-3 space-y-3 z-10">
+            <div class="flex justify-between text-xs text-slate-400 font-mono mb-1">
+                <span id="loadingStatusText">Memuat Model Elipsoid Oval SLOPE3D, Rembesan SEEP/W &amp; Tapak Banyuwangi...</span>
+                <span id="loadingPercent" class="text-emerald-400 font-bold">25%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700 p-0.5">
+                <div id="loadingProgressBar" class="h-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-amber-400 rounded-full w-1/4 transition-all duration-300"></div>
+            </div>
+            <button type="button" onclick="dismissLoadingScreen()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 hover:brightness-110 text-slate-950 font-black font-mono text-xs inline-flex items-center gap-2 shadow-lg shadow-emerald-500/30 transition transform active:scale-95 cursor-pointer">
+                <i class="fa-solid fa-mountain"></i> BUKA WORKSPACE PAD C EXTEND
+            </button>
+            <div class="text-[10px] text-slate-500 font-mono">
+                "Safety &amp; Integrity in Mining Dam Decommissioning — PT Cipta Harmoni Selaras &amp; PT Bumi Suksesindo." — Ir. Mohamad Hartadi, S.T.
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 2. SCREENSAVER TACTICAL MONITOR                                           -->
+    <!-- ========================================================================= -->
+    <div id="screensaverOverlay" class="fixed inset-0 z-[9800] bg-slate-950/95 backdrop-blur-xl text-white hidden flex-col items-center justify-between p-6 select-none transition-opacity duration-500 cursor-pointer" onclick="toggleScreensaver(false)">
+        <div class="w-full flex items-center justify-between z-20 px-2 sm:px-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600/30 border border-emerald-400/50 flex items-center justify-center text-emerald-300 text-lg">
+                    <i class="fa-solid fa-earth-asia"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-bold text-white font-tech">GEOSTUDIO TSF PAD C EXTEND MONITOR</div>
+                    <div class="text-xs text-slate-300 font-mono">Tapak Tambang Emas Tujuh Bukit, Banyuwangi (-8.5985°, 114.0483°)</div>
+                </div>
+            </div>
+            <button type="button" onclick="event.stopPropagation(); toggleScreensaver(false)" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white font-mono">
+                <i class="fa-solid fa-xmark mr-1"></i> Tutup
+            </button>
+        </div>
+
+        <div class="relative w-full max-w-lg my-auto flex flex-col items-center justify-center pointer-events-none z-20">
+            <div class="relative w-72 h-72 sm:w-84 sm:h-84 flex items-center justify-center">
+                <div class="orbit-ring orbit-ring-1"></div>
+                <div class="orbit-ring orbit-ring-2"></div>
+                <div id="ssEarthCanvas" class="w-full h-full earth-viewport-circle"></div>
+            </div>
+            <div id="screensaverClock" class="mt-3 text-5xl sm:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-white to-amber-200 font-tech drop-shadow-2xl">
+                00:00:00
+            </div>
+            <div id="screensaverDate" class="mt-1 text-sm sm:text-base font-bold text-emerald-400 uppercase tracking-widest font-mono">
+                Memuat Hari &amp; Tanggal...
+            </div>
+            <div id="screensaverStatusBadge" class="mt-3 text-xs text-amber-300 font-mono font-bold bg-slate-900/90 px-4 py-1.5 rounded-full border border-amber-500/50">
+                STATUS KESTABILAN: CSA 2D FoS = 3.734 • SLOPE3D PSO FoS = 4.712 • Rembesan Uplift FK = 2.45 (AMAN)
+            </div>
+        </div>
+
+        <div class="z-20 w-full max-w-3xl mx-auto px-4 mb-2">
+            <div class="bg-slate-900/90 border border-emerald-500/50 p-3.5 rounded-2xl text-center text-xs text-slate-200 font-mono">
+                <i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Kriteria Keamanan: Statik FK &ge; 1.50 | Gempa OBE FK &ge; 1.20 | Gempa MDE FK &ge; 1.00 | Uplift FK &ge; 1.50 | Piping FK &ge; 3.00.
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP ACCENT BAR -->
+    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-amber-500 shadow-[0_0_20px_rgba(16,185,129,0.6)] relative z-20"></div>
+
+    <!-- ========================================================================= -->
+    <!-- 3. HEADER COMMAND CENTER & CONTROLS                                       -->
+    <!-- ========================================================================= -->
+    <div class="w-full max-w-[1860px] mx-auto p-3 md:p-4 flex-1 flex flex-col gap-4 relative z-10">
+        <header class="w-full bg-[var(--bg-header)] backdrop-blur-md p-3.5 md:p-4 rounded-2xl border-2 border-[var(--border-color)] shadow-xl flex flex-col gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <div class="p-3 bg-slate-950 rounded-xl border border-emerald-500/50 shrink-0 shadow-inner">
+                        <i class="fa-solid fa-mountain-sun text-emerald-400 text-2xl animate-pulse"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="bg-amber-950 text-amber-300 border border-amber-500/60 text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase">PT Bumi Suksesindo (BSI)</span>
+                            <span class="bg-emerald-950 text-emerald-300 border border-emerald-500/60 text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase">PT Cipta Harmoni Selaras</span>
+                            <span class="bg-cyan-950 text-cyan-300 border border-cyan-500/60 text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase">GeoStudio 2025.2.0</span>
+                            <span class="bg-purple-950 text-purple-300 border border-purple-500/60 text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase">Lat -8.5985°, Long 114.0483°</span>
+                        </div>
+                        <h1 class="font-tech text-sm sm:text-lg md:text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-300 to-amber-400 uppercase mt-1">
+                            ANALISIS KESTABILAN TSF PAD C EXTEND — DECOMMISSIONING &amp; BREACHING TAILING DAM 5 DAN 6A
+                        </h1>
+                        <p class="text-[11px] font-mono text-[var(--text-muted)] mt-0.5">
+                            Desa Sumberagung, Kec. Pesanggaran, Banyuwangi • Evaluasi Bidang Gelincir Elips Oval 2D/3D (CSA, PSO, DE, Entry-Exit), Rembesan SEEP/W &amp; Gempa OBE/MDE
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Jam Real-Time WIB -->
+                <div class="flex items-center bg-slate-950 border border-emerald-500/40 px-3.5 py-2 rounded-xl shadow-lg shrink-0">
+                    <i class="fa-regular fa-clock text-emerald-400 animate-pulse text-lg mr-2.5"></i>
+                    <div class="text-left">
+                        <span id="topDashDate" class="block text-[10px] font-bold text-slate-400 font-mono uppercase">Memuat Hari...</span>
+                        <span id="topDashTime" class="text-sm md:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 font-tech tracking-widest">00:00:00 WIB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BARIS 2: KONTROL NAVIGASI WORKFLOW & TAMPILAN -->
+            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-color)] pt-2.5 font-mono text-[11px]">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-slate-400 font-bold mr-1"><i class="fa-solid fa-diagram-project text-amber-400"></i> WORKSPACE:</span>
+                    <button type="button" onclick="switchCenterTab('workflow')" id="tabBtnWorkflow" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-950 text-emerald-300 border border-emerald-500/60 font-bold cursor-pointer transition">
+                        📊 1. WORKFLOW 6 TAHAP
+                    </button>
+                    <button type="button" onclick="switchCenterTab('slope2d')" id="tabBtnSlope2d" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-slate-950 font-black cursor-pointer shadow transition">
+                        🏔️ 2. SLOPE/W 2D ELIPS
+                    </button>
+                    <button type="button" onclick="switchCenterTab('slope3d')" id="tabBtnSlope3d" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-950 text-emerald-300 border border-emerald-500/60 font-bold cursor-pointer transition">
+                        📦 3. SLOPE3D OVAL BOWL
+                    </button>
+                    <button type="button" onclick="switchCenterTab('seepage')" id="tabBtnSeepage" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-950 text-emerald-300 border border-emerald-500/60 font-bold cursor-pointer transition">
+                        💧 4. REMBESAN SEEP/W
+                    </button>
+                    <button type="button" onclick="switchCenterTab('map')" id="tabBtnMap" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-950 text-emerald-300 border border-emerald-500/60 font-bold cursor-pointer transition">
+                        📍 5. PETA BANYUWANGI
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="openWordReportsModal()" class="px-3 py-1.5 rounded-xl bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-500/70 font-bold cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-word text-sky-400"></i> LAPORAN WORD (13)
+                    </button>
+                    <button type="button" onclick="exportSlicesExcel()" class="px-3 py-1.5 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/70 font-bold cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-excel text-emerald-400"></i> EXCEL PIAS
+                    </button>
+                    <button type="button" onclick="openAppsModal()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-lime-500 to-emerald-500 hover:brightness-110 text-slate-950 font-black cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-cubes-stacked"></i> MY APLIKASI (61)
+                    </button>
+                    <button type="button" onclick="openCreatorModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/50 font-bold cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-tie"></i> PENELITI
+                    </button>
+                    <button type="button" onclick="toggleScreensaver(true)" class="w-9 h-9 rounded-xl bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/60 flex items-center justify-center cursor-pointer" title="Screensaver Bumi 3D">
+                        <i class="fa-solid fa-tv"></i>
+                    </button>
+                    <button type="button" onclick="toggleThemeMode()" class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700 text-amber-400 flex items-center justify-center cursor-pointer" title="Tema Gelap/Terang">
+                        <i id="themeIcon" class="fa-solid fa-moon"></i>
+                    </button>
+                    <div id="ctrlGroupDash"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ========================================================================= -->
+        <!-- 4. 5 KARTU METRIK EKSEKUTIF KESTABILAN TSF PAD C EXTEND                   -->
+        <!-- ========================================================================= -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono">
+            <div class="cmd-card p-3.5 border-l-4 border-l-rose-500">
+                <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase">
+                    <span>① Cuckoo Search (CSA 2D)</span>
+                    <i class="fa-solid fa-crow text-rose-400"></i>
+                </div>
+                <div id="kpiFosCsa" class="text-xl sm:text-2xl font-tech font-black text-rose-400 mt-0.5">3.734</div>
+                <span id="kpiCsaSub" class="text-[10px] text-slate-300 block">FoS Statik &ge; 1.50 (AMAN)</span>
+            </div>
+
+            <div class="cmd-card p-3.5 border-l-4 border-l-cyan-500">
+                <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase">
+                    <span>② PSO / DE (Heuristik 2D)</span>
+                    <i class="fa-solid fa-fish-fins text-cyan-400"></i>
+                </div>
+                <div id="kpiFosPso" class="text-xl sm:text-2xl font-tech font-black text-cyan-300 mt-0.5">3.733</div>
+                <span id="kpiPsoSub" class="text-[10px] text-slate-300 block">Konvergensi Global Cepat</span>
+            </div>
+
+            <div class="cmd-card p-3.5 border-l-4 border-l-amber-500">
+                <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase">
+                    <span>③ SLOPE3D PSO (Oval Bowl)</span>
+                    <i class="fa-solid fa-cube text-amber-400"></i>
+                </div>
+                <div id="kpiFos3d" class="text-xl sm:text-2xl font-tech font-black text-amber-300 mt-0.5">4.712</div>
+                <span id="kpi3dSub" class="text-[10px] text-slate-300 block">3D End Effect Side Shear</span>
+            </div>
+
+            <div class="cmd-card p-3.5 border-l-4 border-l-emerald-500">
+                <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase">
+                    <span>④ Rembesan Uplift &amp; Piping</span>
+                    <i class="fa-solid fa-water text-emerald-400"></i>
+                </div>
+                <div id="kpiSeepage" class="text-xl sm:text-2xl font-tech font-black text-emerald-400 mt-0.5">2.45 / 4.82</div>
+                <span id="kpiSeepageSub" class="text-[10px] text-slate-300 block">Uplift &ge; 1.5 | Piping &ge; 3.0</span>
+            </div>
+
+            <div class="cmd-card p-3.5 border-l-4 border-l-purple-500 col-span-2 sm:col-span-1">
+                <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase">
+                    <span>⑤ Rekomendasi Decommissioning</span>
+                    <i class="fa-solid fa-shield-check text-purple-400"></i>
+                </div>
+                <div id="kpiOverallStatus" class="text-lg sm:text-xl font-tech font-black text-emerald-300 mt-0.5">MEMENUHI SYARAT</div>
+                <span id="kpiOverallSub" class="text-[10px] text-slate-300 block">Tidak Perlu Counterweight</span>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- 5. WORKSPACE GEOTEKNIK UTAMA (3 KOLOM)                                    -->
+        <!-- ========================================================================= -->
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start w-full">
+
+            <!-- ================= LEFT PANEL (3 COLS): PARAMETER MATERIAL & KONDISI BEBAN ================= -->
+            <section class="lg:col-span-3 cmd-card p-4 flex flex-col gap-3 max-h-[860px] overflow-y-auto">
+                <div class="flex justify-between items-center border-b border-emerald-900/60 pb-2">
+                    <h2 class="font-tech text-xs md:text-sm font-black text-amber-300 uppercase">
+                        <i class="fa-solid fa-sliders text-emerald-400 mr-1"></i> Parameter &amp; Kondisi
+                    </h2>
+                    <span class="text-[10px] font-mono text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-700 font-bold">PAD C EXT</span>
+                </div>
+
+                <!-- Pemilih Kondisi Pembebanan (Statik, Gempa OBE, Gempa MDE) -->
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-cyan-500/40 space-y-2 font-mono text-xs">
+                    <div class="text-[11px] font-bold text-cyan-300 uppercase flex items-center justify-between border-b border-slate-800 pb-1">
+                        <span>Kondisi Beban Seismik:</span>
+                        <i class="fa-solid fa-volcano text-cyan-400"></i>
+                    </div>
+                    <select id="selLoadCondition" onchange="applyLoadCondition()" class="w-full bg-slate-900 border border-cyan-500/50 rounded-lg p-1.5 text-white text-[11px]">
+                        <option value="static" selected>1. Statik (Tanpa Gempa, Syarat FK &ge; 1.50)</option>
+                        <option value="obe">2. Gempa OBE (T=100 thn, PGA 0.19g, Syarat FK &ge; 1.20)</option>
+                        <option value="mde">3. Gempa MDE (T=3000/5000 thn, PGA 0.52g, Syarat FK &ge; 1.00)</option>
+                    </select>
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>Koefisien Seismik kh:</span>
+                        <span class="text-amber-300 font-bold" id="lblKhVal">kh = 0.00</span>
+                    </div>
+                </div>
+
+                <!-- Algoritma Pencarian Slip Surface -->
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800 space-y-2 font-mono text-xs">
+                    <div class="text-[11px] font-bold text-emerald-300 uppercase flex items-center justify-between border-b border-slate-800 pb-1">
+                        <span>Algoritma Pencarian Bidang:</span>
+                        <i class="fa-solid fa-magnifying-glass-chart text-emerald-400"></i>
+                    </div>
+                    <select id="selAlgorithm" onchange="runAnalysis()" class="w-full bg-slate-900 border border-emerald-500/50 rounded-lg p-1.5 text-white text-[11px]">
+                        <option value="csa" selected>Cuckoo Search Algorithm (CSA) — FoS 3.734</option>
+                        <option value="de">Differential Evolution (DE) — FoS 3.733</option>
+                        <option value="pso">Particle Swarm Optimization (PSO) — FoS 3.733</option>
+                        <option value="entry_exit">Entry and Exit (Metode Klasik) — FoS 3.908</option>
+                        <option value="slope3d_pso">SLOPE3D PSO Multi-Solid — FoS 4.712</option>
+                    </select>
+                </div>
+
+                <!-- Material 1: 2. CL (Hijau) -->
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-green-500/50 space-y-2 font-mono text-xs">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3.5 h-3.5 rounded bg-green-500 inline-block border border-black"></span>
+                            <span class="font-bold text-green-400">2. CL (Material Hijau)</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">Mohr-Coulomb</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-400">Unit Weight γ (kN/m³)</label>
+                            <input type="number" id="inpGammaCL" value="18.5" step="0.1" oninput="runAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400">Cohesion c' (kPa)</label>
+                            <input type="number" id="inpC_CL" value="16.48" step="0.5" oninput="runAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>Sudut Geser phi' (°)</span>
+                            <span id="lblPhiCL" class="text-green-400 font-bold">14.84°</span>
+                        </div>
+                        <input type="range" id="inpPhiCL" min="10" max="30" step="0.1" value="14.84" oninput="document.getElementById('lblPhiCL').textContent=this.value+'°'; runAnalysis()" class="w-full accent-green-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                    </div>
+                </div>
+
+                <!-- Material 2: 3. CM (Hijau Muda) -->
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-lime-500/50 space-y-2 font-mono text-xs">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3.5 h-3.5 rounded bg-lime-400 inline-block border border-black"></span>
+                            <span class="font-bold text-lime-300">3. CM (Material Hijau Muda)</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">Mohr-Coulomb</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-400">Unit Weight γ (kN/m³)</label>
+                            <input type="number" id="inpGammaCM" value="20.0" step="0.1" oninput="runAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400">Cohesion c' (kPa)</label>
+                            <input type="number" id="inpC_CM" value="69.25" step="0.5" oninput="runAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>Sudut Geser phi' (°)</span>
+                            <span id="lblPhiCM" class="text-lime-300 font-bold">30.23°</span>
+                        </div>
+                        <input type="range" id="inpPhiCM" min="20" max="40" step="0.1" value="30.23" oninput="document.getElementById('lblPhiCM').textContent=this.value+'°'; runAnalysis()" class="w-full accent-lime-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                    </div>
+                </div>
+
+                <!-- Material 3: 4. CH (Ungu) -->
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-indigo-500/50 space-y-2 font-mono text-xs">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3.5 h-3.5 rounded bg-indigo-500 inline-block border border-black"></span>
+                            <span class="font-bold text-indigo-300">4. CH (Material Ungu)</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">Mohr-Coulomb</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-400">Unit Weight γ (kN/m³)</label>
+                            <input type="number" id="inpGammaCH" value="20.0" step="0.1" oninput="runAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400">Cohesion c' (kPa)</label>
+                            <input type="number" id="inpC_CH" value="79.29" step="0.5" oninput="runAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>Sudut Geser phi' (°)</span>
+                            <span id="lblPhiCH" class="text-indigo-300 font-bold">30.23°</span>
+                        </div>
+                        <input type="range" id="inpPhiCH" min="20" max="40" step="0.1" value="30.23" oninput="document.getElementById('lblPhiCH').textContent=this.value+'°'; runAnalysis()" class="w-full accent-indigo-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                    </div>
+                </div>
+
+                <!-- Tombol Eksekusi Run Solver -->
+                <button type="button" onclick="playTacticalTone(); runAnalysis();" class="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:brightness-110 text-slate-950 font-black py-2.5 rounded-xl uppercase font-tech text-xs tracking-wider shadow-lg transition cursor-pointer flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> <span>SOLVE STABILITAS LERENG (F5)</span>
+                </button>
+            </section>
+
+            <!-- ================= CENTER PANEL (6 COLS): WORKFLOW STEPPER, SLOPE/W 2D, SLOPE3D, SEEPAGE ================= -->
+            <section class="lg:col-span-6 flex flex-col gap-4">
+                <div class="cmd-card overflow-hidden flex flex-col">
+
+                    <!-- ================================================================= -->
+                    <!-- VIEWPORT 1: WORKFLOW ANALISIS 6 TAHAP (SESUAI GAMBAR 1 LAPORAN)   -->
+                    <!-- ================================================================= -->
+                    <div id="paneWorkflow" class="p-4 bg-slate-950/95 min-h-[540px] flex flex-col justify-between gap-3 font-mono text-xs">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <div>
+                                <h3 class="font-tech text-xs font-black text-amber-300 uppercase">
+                                    <i class="fa-solid fa-diagram-project mr-1.5 text-emerald-400"></i> DIAGRAM ALIR METODOLOGI ANALISIS KESTABILAN TSF PAD C EXT
+                                </h3>
+                                <p class="text-[10px] text-slate-400">Berdasarkan Gambar 1 Dokumen Penelitian Ir. Mohamad Hartadi — PT Bumi Suksesindo</p>
+                            </div>
+                            <span class="px-2.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/50 font-bold text-[10px]">6 TAHAPAN LENGKAP</span>
+                        </div>
+
+                        <!-- Visual Stepper Interaktif 6 Tahap -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 my-auto">
+                            <!-- Tahap 1 -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/60 transition">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-xs">1</span>
+                                    <span class="font-bold text-white text-[11px]">Pengumpulan Data Primer &amp; Sekunder</span>
+                                </div>
+                                <p class="text-[10px] text-slate-300 leading-relaxed font-sans">
+                                    Pengambilan sampel tanah galian Dam 5 &amp; 6A, data UAV drone topografi Pad C Ext, uji triaksial lab, dan data geoteknik sekunder PT Bumi Suksesindo.
+                                </p>
+                            </div>
+
+                            <!-- Tahap 2 -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/60 transition">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-cyan-400 text-slate-950 font-black flex items-center justify-center text-xs">2</span>
+                                    <span class="font-bold text-white text-[11px]">Penentuan Parameter Mohr-Coulomb</span>
+                                </div>
+                                <p class="text-[10px] text-slate-300 leading-relaxed font-sans">
+                                    Identifikasi 3 satuan litologi pondasi (Tuf, Lava Dasitik, Hornblende Andesit) serta 3 zonasi material timbunan: 2.CL (c'=16.48), 3.CM (c'=69.25), dan 4.CH (c'=79.29).
+                                </p>
+                            </div>
+
+                            <!-- Tahap 3 -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/60 transition">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center text-xs">3</span>
+                                    <span class="font-bold text-white text-[11px]">Pemodelan Geometri 2D &amp; 3D Lereng</span>
+                                </div>
+                                <p class="text-[10px] text-slate-300 leading-relaxed font-sans">
+                                    Konstruksi penampang bertingkat (-145 m s/d 635 m, elevasi -10 m s/d 160 mdpl, trap EL. +104.7, +114.7, +134.7, puncak +149.2 mdpl) dan instrumen piezometer.
+                                </p>
+                            </div>
+
+                            <!-- Tahap 4 -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-emerald-500/60 transition">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-rose-500 text-white font-black flex items-center justify-center text-xs">4</span>
+                                    <span class="font-bold text-rose-300 text-[11px]">Analisis Stabilitas 3 Kondisi Beban</span>
+                                </div>
+                                <p class="text-[10px] text-slate-300 leading-relaxed font-sans">
+                                    Evaluasi Statik (FK &ge; 1.50), Gempa OBE T=100 thn (FK &ge; 1.20), dan Gempa MDE T=3000/5000 thn (FK &ge; 1.00) dengan algoritma metaheuristik CSA, PSO, DE.
+                                </p>
+                            </div>
+
+                            <!-- Tahap 5 -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-sky-500/60 transition">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-sky-400 text-slate-950 font-black flex items-center justify-center text-xs">5</span>
+                                    <span class="font-bold text-white text-[11px]">Analisis Keamanan Rembesan (SEEP/W)</span>
+                                </div>
+                                <p class="text-[10px] text-slate-300 leading-relaxed font-sans">
+                                    Pemeriksaan uplift (FK izin &ge; 1.50) dan erosi buluh / piping (FK izin &ge; 3.00) berdasarkan pembacaan muka freatik piezometer eksisting.
+                                </p>
+                            </div>
+
+                            <!-- Tahap 6 -->
+                            <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/80 transition">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-emerald-400 text-slate-950 font-black flex items-center justify-center text-xs">6</span>
+                                    <span class="font-bold text-emerald-300 text-[11px]">Kesimpulan &amp; Rekomendasi Desain</span>
+                                </div>
+                                <p class="text-[10px] text-emerald-100 leading-relaxed font-sans">
+                                    Seluruh kriteria keselamatan terpenuhi (FK > minimum). Tidak diperlukan modifikasi geometri lereng, counterweight, atau perkuatan tambahan.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Bar Tombol Aksi Cepat Workflow -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-slate-300 text-[11px] font-sans">
+                                <i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Workflow telah divalidasi dengan software Geostudio SLOPE/W &amp; SLOPE3D versi 2025.2.0.
+                            </span>
+                            <button type="button" onclick="switchCenterTab('slope2d')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black cursor-pointer">
+                                Lanjut ke SLOPE/W 2D &rarr;
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ================================================================= -->
+                    <!-- VIEWPORT 2: SLOPE/W 2D BIDANG GELINCIR ELIPS OVAL REALISTIS      -->
+                    <!-- ================================================================= -->
+                    <div id="paneSlope2d" class="geostudio-grid p-3 sm:p-4 min-h-[540px] flex flex-col justify-between gap-3 relative select-none">
+                        <!-- Top Toolbar Toolbar SLOPE/W -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950/90 border border-emerald-400/50 rounded-xl px-3 py-2 text-xs font-mono">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-emerald-300 font-bold"><i class="fa-solid fa-shapes mr-1"></i> BENTUK SLIP SURFACE:</span>
+                                <span class="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/60 font-bold text-[10.5px]">
+                                    Elips Oval Realistis (Spoon-Shaped)
+                                </span>
+                                <button type="button" onclick="toggleHeatmapArcs()" id="btnToggleArcs" class="px-2.5 py-1 rounded bg-emerald-700 text-white font-bold text-[10.5px] cursor-pointer">
+                                    <i class="fa-solid fa-eye mr-1"></i> Heatmap Pelangi
+                                </button>
+                                <button type="button" onclick="toggleSlicesLines()" id="btnToggleSlices" class="px-2.5 py-1 rounded bg-cyan-800 text-white font-bold text-[10.5px] cursor-pointer">
+                                    <i class="fa-solid fa-bars mr-1"></i> Pias Vertikal
+                                </button>
+                            </div>
+                            <button type="button" onclick="downloadSlope2dPNG()" class="px-2.5 py-1 rounded-lg bg-sky-900 hover:bg-sky-800 text-sky-200 border border-sky-400/50 text-[10px] font-bold cursor-pointer">
+                                <i class="fa-solid fa-camera mr-1"></i> Unduh 2D PNG
+                            </button>
+                        </div>
+
+                        <!-- Canvas SVG SLOPE/W 2D -->
+                        <div class="my-auto overflow-x-auto bg-slate-950/70 rounded-xl border border-cyan-500/30 p-2">
+                            <svg id="slope2dSvg" viewBox="0 0 1000 520" class="w-full h-auto min-w-[760px]" xmlns="http://www.w3.org/2000/svg">
+                                <g id="svgSlope2dLayer"></g>
+                            </svg>
+                        </div>
+
+                        <!-- Bottom Status Bar -->
+                        <div class="bg-slate-950/90 border border-cyan-500/30 rounded-xl px-3 py-2 text-[11px] font-mono text-slate-300 flex flex-wrap justify-between items-center gap-2">
+                            <div>
+                                <span class="text-rose-400 font-bold">● FoS 3.734 (Kritis CSA)</span>
+                                <span class="text-amber-400 font-bold ml-2">● 3.934</span>
+                                <span class="text-emerald-400 font-bold ml-2">● 4.134</span>
+                                <span class="text-cyan-400 font-bold ml-2">● 4.334</span>
+                                <span class="text-blue-500 font-bold ml-2">● &ge; 4.634</span>
+                            </div>
+                            <span id="lblCoordPointer" class="text-emerald-300 font-bold">Pusat Rotasi Kritis: X = 255.0 m, Y = 175.0 m</span>
+                        </div>
+                    </div>
+
+                    <!-- ================================================================= -->
+                    <!-- VIEWPORT 3: SLOPE3D THREE.JS MANGKUK OVAL BOWL REALISTIS         -->
+                    <!-- ================================================================= -->
+                    <div id="paneSlope3d" class="hidden relative w-full h-[540px] bg-slate-950 flex flex-col justify-between">
+                        <div class="absolute top-3 left-3 right-3 z-20 flex flex-wrap justify-between items-center bg-slate-900/85 border border-amber-500/40 rounded-xl px-3 py-2 text-xs font-mono">
+                            <div class="flex items-center gap-2">
+                                <span class="text-amber-300 font-bold"><i class="fa-solid fa-cube mr-1"></i> SLOPE3D MANGKUK OVAL BOWL (F of S = 4.712)</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="set3DCameraView('front')" class="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-600 cursor-pointer text-[10px] font-bold">Front</button>
+                                <button type="button" onclick="set3DCameraView('top')" class="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-600 cursor-pointer text-[10px] font-bold">Top</button>
+                                <button type="button" onclick="set3DCameraView('iso')" class="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-600 cursor-pointer text-[10px] font-bold">Iso</button>
+                                <button type="button" onclick="toggle3DSlipBowl()" id="btnToggleBowl" class="px-2.5 py-1 rounded bg-rose-950 text-rose-300 border border-rose-500/50 cursor-pointer text-[10px] font-bold">Oval Bowl: ON</button>
+                                <button type="button" onclick="toggle3DRotation()" id="btnToggleRot" class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/50 cursor-pointer text-[10px] font-bold">Auto-Rotate: ON</button>
+                            </div>
+                        </div>
+                        <div id="slope3dCanvas" class="w-full h-full"></div>
+                    </div>
+
+                    <!-- ================================================================= -->
+                    <!-- VIEWPORT 4: REMBESAN SEEP/W & MONITORING PIEZOMETER              -->
+                    <!-- ================================================================= -->
+                    <div id="paneSeepage" class="hidden p-4 bg-slate-950/95 space-y-4 max-h-[540px] overflow-y-auto font-mono text-xs">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <h3 class="font-tech text-xs font-black text-cyan-300 uppercase">
+                                <i class="fa-solid fa-water mr-1.5 text-cyan-400"></i> ANALISIS KEAMANAN REMBESAN &amp; PIEZOMETER (SEEP/W)
+                            </h3>
+                            <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/50 font-bold text-[10px]">TAPAK PAD C EXT</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="p-3.5 rounded-xl bg-slate-900 border border-emerald-500/40 space-y-2">
+                                <div class="font-bold text-emerald-300 text-xs flex items-center justify-between">
+                                    <span>Pemeriksaan Keamanan Terhadap Uplift</span>
+                                    <span class="text-xs bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-black">FK = 2.45 &ge; 1.50 (AMAN)</span>
+                                </div>
+                                <p class="text-[10.5px] text-slate-300 font-sans leading-relaxed">
+                                    Tekanan air pori ke atas (*uplift pressure*) pada dasar timbunan diimbangi oleh bobot efektif timbunan random tanah dan lapisan pelindung. Nilai rasio berat terhadap gaya angkat menghasilkan faktor keamanan <b>FK = 2.45</b> (melebihi ambang batas minimum 1.50).
+                                </p>
+                            </div>
+
+                            <div class="p-3.5 rounded-xl bg-slate-900 border border-cyan-500/40 space-y-2">
+                                <div class="font-bold text-cyan-300 text-xs flex items-center justify-between">
+                                    <span>Pemeriksaan Terhadap Erosi Buluh (Piping)</span>
+                                    <span class="text-xs bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded font-black">FK = 4.82 &ge; 3.00 (AMAN)</span>
+                                </div>
+                                <p class="text-[10.5px] text-slate-300 font-sans leading-relaxed">
+                                    Gradien hidraulik keluar (*exit gradient*) pada kaki hilir tercatat $i_{exit} \approx 0.18$, jauh lebih kecil dari gradien kritis $i_{cr} \approx 0.87$. Menghasilkan angka keamanan piping <b>FK = 4.82</b> (jauh di atas batas minimum 3.00 untuk bendungan eksisting).
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Tabel Instrumentasi Piezometer -->
+                        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-white text-[11px]"><i class="fa-solid fa-gauge-high mr-1 text-amber-400"></i> Rekapitulasi Data Monitoring Instrumentasi Piezometer Aktual</span>
+                                <span class="text-[10px] text-slate-400">Tabel 4 Dokumen Laporan</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-[10.5px]">
+                                    <thead class="bg-slate-950 text-cyan-300 border-b border-slate-700">
+                                        <tr>
+                                            <th class="p-2">No</th>
+                                            <th class="p-2">ID Piezometer</th>
+                                            <th class="p-2">Lokasi / Zona</th>
+                                            <th class="p-2">Elevasi Piezometer</th>
+                                            <th class="p-2">Elevasi Muka Air</th>
+                                            <th class="p-2">Tekanan Pori (kPa)</th>
+                                            <th class="p-2 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800 text-slate-200">
+                                        <tr class="hover:bg-slate-800/80">
+                                            <td class="p-2 font-bold text-amber-400">1</td>
+                                            <td class="p-2 font-bold">PZ-1 (TSF-01)</td>
+                                            <td class="p-2">Kaki Lereng Hulu (Toe)</td>
+                                            <td class="p-2">+43.00 mdpl</td>
+                                            <td class="p-2">+38.00 mdpl</td>
+                                            <td class="p-2 text-cyan-300 font-bold">49.05 kPa</td>
+                                            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] font-bold">Normal</span></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/80">
+                                            <td class="p-2 font-bold text-amber-400">2</td>
+                                            <td class="p-2 font-bold">PZ-2 (TSF-02)</td>
+                                            <td class="p-2">Trap Berm EL. +104.7</td>
+                                            <td class="p-2">+104.73 mdpl</td>
+                                            <td class="p-2">+96.50 mdpl</td>
+                                            <td class="p-2 text-cyan-300 font-bold">80.74 kPa</td>
+                                            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] font-bold">Normal</span></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/80">
+                                            <td class="p-2 font-bold text-amber-400">3</td>
+                                            <td class="p-2 font-bold">PZ-3 (TSF-03)</td>
+                                            <td class="p-2">Krest Timbunan Hilir</td>
+                                            <td class="p-2">+149.25 mdpl</td>
+                                            <td class="p-2">+128.00 mdpl</td>
+                                            <td class="p-2 text-cyan-300 font-bold">208.46 kPa</td>
+                                            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] font-bold">Normal</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================================================================= -->
+                    <!-- VIEWPORT 5: WEBGIS PETA LOKASI BANYUWANGI (-8.5985, 114.0483)   -->
+                    <!-- ================================================================= -->
+                    <div id="paneMap" class="hidden relative w-full h-[540px] bg-slate-950">
+                        <div id="slopeLeafletMap" class="w-full h-full z-10"></div>
+                    </div>
+                </div>
+
+                <!-- GRAFIK ANALITIK MULTI-METODE & BEBAN GEMPA (CHART.JS) -->
+                <div class="cmd-card p-4">
+                    <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-2 mb-3 gap-2">
+                        <h2 class="font-tech text-xs md:text-sm font-black text-emerald-400 flex items-center gap-2 uppercase">
+                            <i class="fa-solid fa-chart-line text-amber-400"></i> Komparasi FoS: Heuristik 2D, SLOPE3D &amp; Beban Gempa (OBE/MDE)
+                        </h2>
+                        <div class="flex flex-wrap gap-1.5 text-[10.5px] font-mono">
+                            <button type="button" onclick="switchSlopeChart('algorithms')" id="btnChartAlg" class="px-2.5 py-1 rounded bg-emerald-600 text-slate-950 font-black cursor-pointer">1. METODE HEURISTIK vs KLASIK</button>
+                            <button type="button" onclick="switchSlopeChart('seismic')" id="btnChartSeis" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white cursor-pointer">2. RESPON GEMPA (STATIK, OBE, MDE)</button>
+                            <button type="button" onclick="switchSlopeChart('piezometer')" id="btnChartPiez" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white cursor-pointer">3. TEKANAN AIR PORI PIEZOMETER</button>
+                        </div>
+                    </div>
+                    <div class="w-full h-[220px]">
+                        <canvas id="slopeAnalyticsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= RIGHT PANEL (3 COLS): LITOLOGI BATUAN PONDASI & FORMULASI ================= -->
+            <section class="lg:col-span-3 cmd-card p-4 flex flex-col gap-3 max-h-[860px] overflow-y-auto font-mono text-xs">
+                <div class="flex justify-between items-center border-b border-emerald-900/60 pb-2">
+                    <h2 class="font-tech text-xs md:text-sm font-black text-emerald-400 flex items-center gap-1.5 uppercase">
+                        <i class="fa-solid fa-gem text-amber-400"></i> Litologi Pondasi Tapak
+                    </h2>
+                    <span class="text-[10px] text-amber-300 bg-amber-950 px-2 py-0.5 rounded border border-amber-500/50 font-bold">BANYUWANGI</span>
+                </div>
+
+                <!-- Litologi 1: Andesite Ash Flow Tuff -->
+                <div class="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
+                    <div class="font-bold text-amber-300 text-[11px] flex items-center justify-between">
+                        <span>1. Andesite Ash Flow Tuff</span>
+                        <span class="text-[9px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded">UCS 10–35 MPa</span>
+                    </div>
+                    <p class="text-[10px] text-slate-300 font-sans leading-relaxed">
+                        Endapan piroklastik awan panas letusan eksplosif purba. Porositas primer sedang–tinggi, rentan terhadap pelapukan tropis dan gerusan internal (*internal piping*). Memerlukan kupasan lapisan lunak (*soft mud stripping*).
+                    </p>
+                </div>
+
+                <!-- Litologi 2: Andesite Dacitic Flow -->
+                <div class="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
+                    <div class="font-bold text-cyan-300 text-[11px] flex items-center justify-between">
+                        <span>2. Andesite Dacitic Flow</span>
+                        <span class="text-[9px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded">UCS 60–120 MPa</span>
+                    </div>
+                    <p class="text-[10px] text-slate-300 font-sans leading-relaxed">
+                        Lelehan lava berkomposisi menengah-asam (SiO2 57–66%). Sangat keras, menyediakan daya dukung tinggi (*high bearing capacity*) sebagai tumpuan timbunan PAD C Ext. Didominasi kekar pendinginan (*cooling joints*).
+                    </p>
+                </div>
+
+                <!-- Litologi 3: Porphyry Hornblende Andesite -->
+                <div class="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1">
+                    <div class="font-bold text-emerald-300 text-[11px] flex items-center justify-between">
+                        <span>3. Porphyry Hornblende Andesite</span>
+                        <span class="text-[9px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded">UCS 80–140 MPa</span>
+                    </div>
+                    <p class="text-[10px] text-slate-300 font-sans leading-relaxed">
+                        Batuan beku intrusi dangkal (sub-vulkanik) pembawa mineralisasi emas-tembaga Tumpang Pitu. Sangat kompeten dan masif, berfungsi sebagai tumpuan tebing (*dam abutment*) utama yang paling stabil.
+                    </p>
+                </div>
+
+                <!-- Penjelasan Algoritma Heuristik Dokumen -->
+                <div class="p-3 bg-slate-950/90 rounded-xl border border-slate-800 space-y-1.5">
+                    <div class="font-bold text-white text-[11px]"><i class="fa-solid fa-brain text-purple-400 mr-1"></i> Keunggulan Heuristik (CSA, PSO, DE)</div>
+                    <p class="text-[10px] text-slate-300 font-sans leading-relaxed">
+                        Mampu mencari bidang gelincir kritis global secara otomatis pada bendungan zonasi multi-lapis tanpa terjebak pada minimum lokal. Menghasilkan pencarian slip surface elips oval yang adaptif dan presisi tinggi dibandingkan metode klasik Entry-Exit.
+                    </p>
+                </div>
+
+                <!-- Tombol Buka Modal Laporan Word -->
+                <button type="button" onclick="openWordReportsModal()" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-black py-2.5 rounded-xl uppercase font-tech text-xs tracking-wider shadow-lg transition cursor-pointer flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-word"></i> <span>PUSAT EKSPOR 13 LAPORAN WORD</span>
+                </button>
+            </section>
+        </main>
+
+        <!-- ========================================================================= -->
+        <!-- 6. PANEL KREDIT PROGRAMMER DENGAN BUMI 3D (IR. MOHAMAD HARTADI)           -->
+        <!-- ========================================================================= -->
+        <section class="cmd-card p-4 sm:p-5 border-2 border-cyan-500/60 bg-gradient-to-r from-[#020617] via-[#071526] to-[#020617]">
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
+                <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                    <div class="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 flex items-center justify-center rounded-full bg-slate-950 border-2 border-cyan-400/70 shadow-[0_0_20px_rgba(6,182,212,0.5)] p-1">
+                        <div class="orbit-ring orbit-ring-1"></div>
+                        <div id="footerCreditEarthCanvas" class="w-full h-full earth-viewport-circle"></div>
+                    </div>
+                    <div>
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/50 text-[10px] font-mono text-cyan-300 font-bold mb-1">
+                            <i class="fa-solid fa-earth-asia text-emerald-400"></i> PENGEMBANG &amp; AHLI GEOTEKNIK DAM SAFETY
+                        </div>
+                        <h3 class="text-cyan-300 font-black font-tech text-base sm:text-lg tracking-wide uppercase">
+                            IR. MOHAMAD HARTADI, S.T. (ADI)
+                        </h3>
+                        <p class="text-slate-300 font-mono text-xs">
+                            Civil &amp; Geotechnical Dam Safety Engineer • PT Cipta Harmoni Selaras • adi04.kds@gmail.com
+                        </p>
+                        <p class="text-slate-400 text-[11px] mt-1 max-w-2xl font-sans">
+                            Peneliti dan perancang analisis geoteknik kestabilan lereng TSF Pad C Extend (Decommissioning &amp; Breaching Dam 5 &amp; 6A PT Bumi Suksesindo, Banyuwangi), pengembang sistem numerik GeoStudio 2D/3D, dan ekosistem 61 aplikasi web keteknikan.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2 justify-center font-mono text-xs shrink-0">
+                    <button type="button" onclick="openAppsModal()" class="bg-gradient-to-r from-amber-500 to-lime-500 hover:brightness-110 text-slate-950 font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer">
+                        <i class="fa-solid fa-cubes-stacked"></i> 61 My Aplikasi
+                    </button>
+                    <a href="https://www.facebook.com/m.hartadi" target="_blank" rel="noopener noreferrer" class="bg-blue-950/80 border border-blue-500 hover:bg-blue-800 text-blue-300 px-3.5 py-2 rounded-xl flex items-center gap-1.5 font-bold">
+                        <i class="fa-brands fa-facebook"></i> Facebook
+                    </a>
+                    <a href="https://newbieonline7.blogspot.com/" target="_blank" rel="noopener noreferrer" class="bg-amber-950/80 border border-amber-500 hover:bg-amber-800 text-amber-300 px-3.5 py-2 rounded-xl flex items-center gap-1.5 font-bold">
+                        <i class="fa-solid fa-globe"></i> Blogosphere
+                    </a>
+                    <a href="https://wa.me/6282231036047" target="_blank" rel="noopener noreferrer" class="bg-emerald-950/80 border border-emerald-500 hover:bg-emerald-800 text-emerald-300 px-3.5 py-2 rounded-xl flex items-center gap-1.5 font-bold">
+                        <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                    </a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 7. MODAL DIREKTORI 61 MY APLIKASI WEB                                     -->
+    <!-- ========================================================================= -->
+    <div id="modalApps" class="fixed inset-0 z-[1400] bg-black/85 backdrop-blur-md hidden items-center justify-center p-3 sm:p-5 font-mono text-xs">
+        <div class="cmd-card max-w-5xl w-full p-5 space-y-4 border-2 border-lime-500/75 bg-[#061216] max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-lime-500/30 pb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-lime-500 to-emerald-500 flex items-center justify-center text-slate-950 text-lg font-black">
+                        <i class="fa-solid fa-cubes-stacked"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-tech text-sm sm:text-base font-black text-amber-300">DIREKTORI 61 MY APLIKASI WEB — IR. MOHAMAD HARTADI</h3>
+                        <p class="text-[10px] text-lime-300">Ekosistem Aplikasi Web Geoteknik, Stabilitas Lereng, TSF Dam Tailing &amp; AI</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAppsModal()" class="w-8 h-8 rounded-lg bg-slate-900 border border-lime-500/40 text-lime-300 hover:bg-lime-500 hover:text-slate-950 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <input type="text" id="appSearchInput" oninput="renderAppsDirectory(this.value)" placeholder="Cari aplikasi (contoh: lereng, geostruct, pondasi, dam, tailing, seismik)..." class="w-full bg-slate-950 border border-lime-500/50 rounded-xl px-3.5 py-2 text-white outline-none">
+            <div id="appsGridContainer" class="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pr-1"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 8. MODAL PROFIL PENELITI (IR. MOHAMAD HARTADI)                            -->
+    <!-- ========================================================================= -->
+    <div id="creatorModal" class="fixed inset-0 z-[1400] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 font-mono text-xs">
+        <div class="cmd-card max-w-md w-full p-6 border-2 border-emerald-500 text-center space-y-3 bg-slate-900">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="font-tech font-bold text-amber-400"><i class="fa-solid fa-id-badge mr-1"></i> PROFIL PENELITI &amp; PROGRAMMER</span>
+                <button type="button" onclick="closeCreatorModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="relative w-32 h-32 mx-auto flex items-center justify-center rounded-full bg-slate-950 border-2 border-emerald-400/70">
+                <div class="orbit-ring orbit-ring-1"></div>
+                <div id="modalCreatorEarthCanvas" class="w-full h-full earth-viewport-circle"></div>
+            </div>
+            <div>
+                <h3 class="font-tech text-base font-black text-white">IR. MOHAMAD HARTADI, S.T.</h3>
+                <p class="text-emerald-400 font-bold text-[11px] mt-0.5">Geotechnical Dam Safety Engineer • PT Cipta Harmoni Selaras</p>
+                <p class="text-slate-400 text-[10px]">adi04.kds@gmail.com • 0822-3103-6047</p>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-relaxed text-justify font-sans">
+                Penulis laporan teknis "Analisis Kestabilan TSF PAD C Extend — Penghapusan Fungsi (Decommissioning &amp; Breaching) Tailing Dam 5 dan 6A PT Bumi Suksesindo, Banyuwangi".
+            </p>
+            <div class="space-y-2 text-left pt-1">
+                <a href="https://www.facebook.com/m.hartadi" target="_blank" rel="noopener noreferrer" class="p-2.5 rounded-xl bg-blue-950/60 border border-blue-500/60 text-blue-300 flex justify-between items-center">
+                    <span><i class="fa-brands fa-facebook mr-1.5"></i>Facebook: <b>m.hartadi</b></span>
+                    <span class="bg-blue-900 px-2 py-0.5 rounded text-[10px] text-white font-bold">Buka</span>
+                </a>
+                <a href="https://newbieonline7.blogspot.com/" target="_blank" rel="noopener noreferrer" class="p-2.5 rounded-xl bg-amber-950/60 border border-amber-500/60 text-amber-300 flex justify-between items-center">
+                    <span><i class="fa-solid fa-blog mr-1.5"></i>Blog: <b>newbieonline7.blogspot.com</b></span>
+                    <span class="bg-amber-900 px-2 py-0.5 rounded text-[10px] text-white font-bold">Buka</span>
+                </a>
+                <a href="https://wa.me/6282231036047" target="_blank" rel="noopener noreferrer" class="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/60 text-emerald-300 flex justify-between items-center">
+                    <span><i class="fa-brands fa-whatsapp mr-1.5"></i>WhatsApp: <b>0822-3103-6047</b></span>
+                    <span class="bg-emerald-800 px-2 py-0.5 rounded text-[10px] text-white font-bold">Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 9. MODAL PUSAT EKSPOR 13 LAPORAN WORD (.DOC) TSF PAD C EXTEND             -->
+    <!-- ========================================================================= -->
+    <div id="wordReportsModal" onclick="if(event.target===this) closeWordReportsModal()" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[10070] flex items-center justify-center p-4 hidden font-mono">
+        <div class="bg-slate-900 border border-sky-500/50 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between p-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-600 to-blue-800 flex items-center justify-center shadow-lg"><i class="fa-solid fa-file-word text-white text-lg"></i></div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm tracking-wider">PUSAT EKSPOR 13 LAPORAN TEKNIS TSF PAD C EXTEND (.DOC)</h3>
+                        <p class="text-[10px] text-slate-400">Decommissioning &amp; Breaching Dam 5 &amp; 6A PT Bumi Suksesindo, Banyuwangi</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeWordReportsModal()" class="w-9 h-9 rounded-lg bg-rose-900/60 border border-rose-500/60 text-rose-300 hover:bg-rose-800 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between gap-2">
+                <p class="text-[10px] text-slate-400"><i class="fa-solid fa-circle-info text-sky-400 mr-1"></i>Format Word (.doc) terstruktur memuat data pias, litologi batuan, rembesan, dan evaluasi gempa.</p>
+                <button type="button" onclick="exportAllWordReports()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-sky-600 to-blue-700 text-white text-[11px] font-black cursor-pointer flex items-center gap-1.5 shrink-0"><i class="fa-solid fa-download"></i> UNDUH SEMUA (13)</button>
+            </div>
+            <div class="overflow-y-auto p-3 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="wordReportsList"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 10. FLOATING JARVIS GEOTECHNICAL AI CHATBOT & ACTIONS                     -->
+    <!-- ========================================================================= -->
+    <div id="floatingChatPanel" class="fixed bottom-20 right-5 z-[1100] w-[350px] sm:w-[430px] max-w-[calc(100vw-2rem)] bg-slate-950/95 backdrop-blur-xl border-2 border-emerald-500 rounded-2xl shadow-2xl hidden flex-col h-[500px] max-h-[78vh] font-mono text-xs overflow-hidden">
+        <div class="p-3 bg-gradient-to-r from-slate-950 to-emerald-950 border-b border-emerald-500/40 flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-emerald-900 border border-emerald-400 flex items-center justify-center text-emerald-300">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h4 class="font-tech text-xs font-black text-white">JARVIS AI — GEOTECHNICAL EXPERT</h4>
+                    <span class="text-[9.5px] text-emerald-400">Asisten TSF PAD C Extend PT Bumi Suksesindo</span>
+                </div>
+            </div>
+            <button type="button" onclick="toggleChatPanel()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+        </div>
+
+        <div id="chatMessagesBox" class="p-3 space-y-2.5 overflow-y-auto flex-1 bg-slate-950/80">
+            <div class="p-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-slate-200 leading-relaxed font-sans">
+                <b class="text-emerald-400 font-mono block mb-1">🤖 JARVIS GEOTECHNICAL AI:</b>
+                Selamat datang! Fasilitas <b>TSF PAD C Extend (Dam 5 &amp; 6A PT Bumi Suksesindo, Banyuwangi)</b> telah dimuat dengan hasil analisis: <b>FoS CSA = 3.734</b>, <b>FoS SLOPE3D PSO = 4.712</b>, serta keamanan rembesan uplift <b>FK = 2.45</b>. Silakan ajukan pertanyaan seputar geoteknik atau klik pintasan di bawah.
+            </div>
+        </div>
+
+        <div class="p-2 bg-slate-900 border-t border-slate-800 flex gap-1.5 overflow-x-auto">
+            <button type="button" onclick="sendQuickChat('Mengapa slip surface berbentuk elips oval?')" class="px-2.5 py-1 rounded bg-emerald-950 text-emerald-300 border border-emerald-600 whitespace-nowrap cursor-pointer">🥚 Elips Oval Slip Surface</button>
+            <button type="button" onclick="sendQuickChat('Jelaskan 3 litologi batuan pondasi')" class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-600 whitespace-nowrap cursor-pointer">💎 3 Litologi Batuan</button>
+            <button type="button" onclick="sendQuickChat('Apakah perlu counterweight tambahan?')" class="px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-600 whitespace-nowrap cursor-pointer">🛡️ Rekomendasi Desain</button>
+        </div>
+
+        <form onsubmit="event.preventDefault(); processUserChat();" class="p-2.5 bg-slate-950 border-t border-slate-800 flex gap-2">
+            <input type="text" id="chatUserInput" placeholder="Tanya stabilitas lereng, gempa OBE/MDE, rembesan..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-400">
+            <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer"><i class="fa-solid fa-paper-plane"></i></button>
+        </form>
+    </div>
+
+    <!-- Floating Bottom-Right Action Buttons -->
+    <div class="fixed bottom-4 right-4 z-[1050] flex items-center gap-2">
+        <button type="button" onclick="openWordReportsModal()" class="w-11 h-11 rounded-full bg-sky-600 hover:bg-sky-500 text-white border border-sky-300 shadow-lg flex items-center justify-center transition transform hover:scale-110 cursor-pointer" title="Pusat Ekspor 13 Laporan Word (.doc)">
+            <i class="fa-solid fa-file-word"></i>
+        </button>
+        <button type="button" onclick="openAppsModal()" class="w-11 h-11 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-200 shadow-lg flex items-center justify-center transition transform hover:scale-110 cursor-pointer" title="Direktori 61 My Aplikasi">
+            <i class="fa-solid fa-cubes-stacked"></i>
+        </button>
+        <button type="button" onclick="toggleScreensaver(true)" class="w-11 h-11 rounded-full bg-blue-600 hover:bg-blue-500 text-white border border-blue-300 shadow-lg flex items-center justify-center transition transform hover:scale-110 cursor-pointer" title="Screensaver Bumi 3D">
+            <i class="fa-solid fa-earth-asia"></i>
+        </button>
+        <button type="button" onclick="toggleChatPanel()" class="px-4 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black border border-emerald-200 shadow-xl flex items-center gap-2 transition transform hover:scale-105 cursor-pointer">
+            <i class="fa-solid fa-robot text-lg"></i>
+            <span class="font-tech text-xs hidden sm:inline">JARVIS AI</span>
+        </button>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- JAVASCRIPT ENGINE: ELIPS OVAL SLIP SURFACE, THREE.JS, WORKFLOW & EXPORT   -->
+    <!-- ========================================================================= -->
+    <script>
+        // =====================================================================
+        // 1. TACTICAL AUDIO & STATE INITIALIZATION
+        // =====================================================================
+        function playTacticalTone() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(440, now + 0.12);
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.13);
+            } catch(e) {}
+        }
+
+        // State Geoteknik TSF Pad C Extend
+        const padCState = {
+            project: 'TSF PAD C EXTEND — PT BUMI SUKSESINDO',
+            location: 'Desa Sumberagung, Pesanggaran, Banyuwangi (-8.5985, 114.0483)',
+            engineer: 'Ir. Mohamad Hartadi, S.T. (PT Cipta Harmoni Selaras)',
+            loadCondition: 'static', // 'static', 'obe', 'mde'
+            algorithm: 'csa',       // 'csa', 'de', 'pso', 'entry_exit', 'slope3d_pso'
+            kh: 0.00,
+            showArcs: true,
+            showSlices: true,
+            // Koordinat Geometri Profil Permukaan Tanah Benched Sesuai Foto
+            groundPoints: [
+                [-145, 43], [-105, 43], [-45, 43], [-5, 43], [15, 43], [55, 43],
+                [115, 43], [175, 46], [215, 49], [255, 64], [295, 84],
+                [335, 104.728], [355, 104.728], // Trap 1 (EL +104.728)
+                [375, 114.752], [395, 114.752], // Trap 2 (EL +114.752)
+                [415, 134.792], [435, 134.792], // Trap 3 (EL +134.792)
+                [455, 149.246], [475, 149.246], // Crest Puncak (EL +149.246)
+                [515, 120], [555, 85], [595, 68], [635, 68]
+            ],
+            // Parameter Bidang Gelincir Elips Oval Kritis
+            critOval: {
+                center: { x: 255.0, y: 175.0 },
+                entryX: 35.0,
+                exitX: 450.0,
+                deepestY: -2.0,
+                deepestX: 235.0
+            },
+            // Nilai FoS sesuai dokumen laporan
+            fosValues: {
+                csa: 3.734,
+                de: 3.733,
+                pso: 3.733,
+                entry_exit: 3.908,
+                slope3d_pso: 4.712
+            },
+            currentFoS: 3.734,
+            seepage: {
+                upliftFoS: 2.45,
+                pipingFoS: 4.82
+            },
+            slices: [],
+            trialOvalArcs: []
+        };
+
+        let slopeChartInstance = null;
+        let currentSlopeChartMode = 'algorithms';
+        let slopeLeafletMap = null;
+
+        // =====================================================================
+        // 2. GENERATOR BIDANG GELINCIR ELIPS OVAL REALISTIS 2D
+        // =====================================================================
+        // Menghitung elevasi kurva elips oval pada koordinat X
+        function getOvalSlipY(x, entryX, exitX, deepestX, deepestY, crestElev) {
+            if (x < entryX || x > exitX) return null;
+            const normX = (x - deepestX) / (exitX - entryX);
+            // Formulasi kurva elips / parabolik asimetris yang melengkung mulus dari toe ke crest
+            const t = (x - entryX) / (exitX - entryX);
+            const groundEntryY = 43.0;
+            const groundExitY = 149.246;
+
+            // Kurva Bezier kubik untuk mereplikasi busur elips oval GeoStudio SLOPE/W
+            const P0 = groundEntryY;
+            const P1 = deepestY;
+            const P2 = deepestY + 8.0;
+            const P3 = groundExitY;
+
+            const y = Math.pow(1 - t, 3) * P0 +
+                      3 * Math.pow(1 - t, 2) * t * P1 +
+                      3 * (1 - t) * Math.pow(t, 2) * P2 +
+                      Math.pow(t, 3) * P3;
+            return y;
+        }
+
+        function generateRealisticOvalTrialArcs() {
+            const arcs = [];
+            const base = padCState.critOval;
+            const baseFos = padCState.currentFoS;
+
+            const colorRanges = [
+                { min: 3.733, max: 3.833, color: '#dc2626' }, // Merah (Kritis)
+                { min: 3.833, max: 3.933, color: '#ea580c' }, // Jingga
+                { min: 3.933, max: 4.033, color: '#f59e0b' }, // Kuning Tua
+                { min: 4.033, max: 4.133, color: '#84cc16' }, // Hijau Muda
+                { min: 4.133, max: 4.233, color: '#10b981' }, // Hijau
+                { min: 4.233, max: 4.333, color: '#14b8a6' }, // Teal
+                { min: 4.333, max: 4.433, color: '#06b6d4' }, // Cyan
+                { min: 4.433, max: 4.533, color: '#0284c7' }, // Biru Langit
+                { min: 4.533, max: 4.633, color: '#2563eb' }, // Biru Sedang
+                { min: 4.633, max: 99.0,  color: '#1e3a8a' }  // Biru Tua
+            ];
+
+            // Generate ~85 berkas busur elips oval sesuai visualisasi GeoStudio SLOPE/W
+            for (let i = 0; i < 85; i++) {
+                const dEntry = (Math.random() - 0.5) * 55;
+                const dExit = (Math.random() - 0.5) * 35;
+                const dDeep = (Math.random() - 0.45) * 18;
+
+                const entryX = Math.max(-5, base.entryX + dEntry);
+                const exitX = Math.min(480, base.exitX + dExit);
+                const deepestX = base.deepestX + (Math.random() - 0.5) * 20;
+                const deepestY = base.deepestY + dDeep;
+
+                const deltaFos = (Math.abs(dEntry)/45 + Math.abs(dExit)/30 + Math.abs(dDeep)/15) * 0.48;
+                const fos = baseFos + deltaFos;
+
+                let c = colorRanges[colorRanges.length - 1].color;
+                for (let cr of colorRanges) {
+                    if (fos >= cr.min && fos < cr.max) { c = cr.color; break; }
+                }
+
+                arcs.push({ entryX, exitX, deepestX, deepestY, fos, color: c });
+            }
+            padCState.trialOvalArcs = arcs;
+        }
+
+        // =====================================================================
+        // 3. SOLVER IRISAN PIAS (SLICES DISCRETIZATION)
+        // =====================================================================
+        function solveOvalSlices() {
+            const nSlices = 30;
+            const gammaCL = parseFloat(document.getElementById('inpGammaCL')?.value) || 18.5;
+            const cCL = parseFloat(document.getElementById('inpC_CL')?.value) || 16.48;
+            const phiCL = parseFloat(document.getElementById('inpPhiCL')?.value) || 14.84;
+
+            const gammaCM = parseFloat(document.getElementById('inpGammaCM')?.value) || 20.0;
+            const cCM = parseFloat(document.getElementById('inpC_CM')?.value) || 69.25;
+            const phiCM = parseFloat(document.getElementById('inpPhiCM')?.value) || 30.23;
+
+            const gammaCH = parseFloat(document.getElementById('inpGammaCH')?.value) || 20.0;
+            const cCH = parseFloat(document.getElementById('inpC_CH')?.value) || 79.29;
+            const phiCH = parseFloat(document.getElementById('inpPhiCH')?.value) || 30.23;
+
+            const entryX = padCState.critOval.entryX;
+            const exitX = padCState.critOval.exitX;
+            const sliceWidth = (exitX - entryX) / nSlices;
+
+            const slices = [];
+            for (let i = 0; i < nSlices; i++) {
+                const xMid = entryX + (i + 0.5) * sliceWidth;
+                const yGround = interpolateGroundY(xMid);
+                const yBase = getOvalSlipY(xMid, entryX, exitX, padCState.critOval.deepestX, padCState.critOval.deepestY, 149.246);
+
+                if (yBase === null || yBase >= yGround) continue;
+                const hSlice = yGround - yBase;
+
+                // Tentukan sudut kemiringan dasar pias (alpha)
+                const dxStep = 0.5;
+                const y1 = getOvalSlipY(xMid - dxStep, entryX, exitX, padCState.critOval.deepestX, padCState.critOval.deepestY, 149.246);
+                const y2 = getOvalSlipY(xMid + dxStep, entryX, exitX, padCState.critOval.deepestX, padCState.critOval.deepestY, 149.246);
+                const slopeTan = (y2 - y1) / (2 * dxStep);
+                const alphaRad = Math.atan(slopeTan);
+                const alphaDeg = alphaRad * 180 / Math.PI;
+
+                // Zonasi material sesuai koordinat X & elevasi
+                let gamma = gammaCH, c = cCH, phi = phiCH;
+                if (xMid < 55) {
+                    gamma = gammaCM; c = cCM; phi = phiCM;
+                } else if (xMid < 295 && yBase > 0) {
+                    gamma = gammaCL; c = cCL; phi = phiCL;
+                }
+
+                const W = gamma * hSlice * sliceWidth;
+                const waterElev = 38.0;
+                let u = 0;
+                if (yBase < waterElev) {
+                    u = (waterElev - yBase) * 9.81;
+                }
+
+                const cosAlpha = Math.cos(alphaRad);
+                const baseArea = sliceWidth / Math.max(cosAlpha, 0.08);
+                const normalForce = Math.max(10, W * cosAlpha - u * baseArea);
+                const sigmaPrime = normalForce / baseArea;
+                const shearStrength = c + sigmaPrime * Math.tan(phi * Math.PI / 180);
+
+                slices.push({
+                    id: i + 1,
+                    xMid: Number(xMid.toFixed(1)),
+                    yGround: Number(yGround.toFixed(2)),
+                    yBase: Number(yBase.toFixed(2)),
+                    hSlice: Number(hSlice.toFixed(2)),
+                    alphaDeg: Number(alphaDeg.toFixed(1)),
+                    W: Number(W.toFixed(1)),
+                    sigmaPrime: Number(sigmaPrime.toFixed(1)),
+                    shearStrength: Number(shearStrength.toFixed(1)),
+                    u: Number(u.toFixed(1))
+                });
+            }
+            padCState.slices = slices;
+        }
+
+        function interpolateGroundY(x) {
+            const pts = padCState.groundPoints;
+            if (x <= pts[0][0]) return pts[0][1];
+            if (x >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
+            for (let i = 0; i < pts.length - 1; i++) {
+                if (x >= pts[i][0] && x <= pts[i+1][0]) {
+                    const ratio = (x - pts[i][0]) / (pts[i+1][0] - pts[i][0]);
+                    return pts[i][1] + ratio * (pts[i+1][1] - pts[i][1]);
+                }
+            }
+            return 43.0;
+        }
+
+        // =====================================================================
+        // 4. RENDERER SVG SLOPE/W 2D (ELIPS OVAL & ZONASI MATERIAL DOKUMEN)
+        // =====================================================================
+        function renderSlope2dSVG() {
+            const g = document.getElementById('svgSlope2dLayer');
+            if (!g) return;
+
+            // Transformasi Koordinat Dunia ke SVG (1000 x 520)
+            const toSvgX = (x) => 65 + ((x - (-145)) / 780) * 885;
+            const toSvgY = (y) => 460 - ((y - (-10)) / 170) * 400;
+
+            const pts = padCState.groundPoints;
+            let groundPathD = `M ${toSvgX(pts[0][0])},${toSvgY(pts[0][1])}`;
+            for (let i = 1; i < pts.length; i++) {
+                groundPathD += ` L ${toSvgX(pts[i][0])},${toSvgY(pts[i][1])}`;
+            }
+
+            // Path 3 Zonasi Material Eksak Dokumen Gambar:
+            // 1. Lapisan Hijau Muda (3. CM): x: -145 s/d 55
+            const pathCM = `M ${toSvgX(-145)},${toSvgY(43)} L ${toSvgX(-5)},${toSvgY(43)} L ${toSvgX(55)},${toSvgY(-10)} L ${toSvgX(-145)},${toSvgY(-10)} Z`;
+
+            // 2. Lapisan Hijau (2. CL): x: -5 s/d 295
+            const pathCL = `M ${toSvgX(-5)},${toSvgY(43)} L ${toSvgX(185)},${toSvgY(52)} L ${toSvgX(295)},${toSvgY(-10)} L ${toSvgX(55)},${toSvgY(-10)} Z`;
+
+            // 3. Lapisan Ungu (4. CH): x: 185 s/d 635 (Tubuh utama timbunan)
+            let pathCH = `M ${toSvgX(185)},${toSvgY(52)}`;
+            for (let i = 7; i < pts.length; i++) {
+                pathCH += ` L ${toSvgX(pts[i][0])},${toSvgY(pts[i][1])}`;
+            }
+            pathCH += ` L ${toSvgX(635)},${toSvgY(-10)} L ${toSvgX(295)},${toSvgY(-10)} Z`;
+
+            let svg = `
+                <!-- Grid Latar Belakang & Batas Kanvas -->
+                <rect x="50" y="30" width="920" height="440" fill="#030c1c" stroke="#1e293b" stroke-width="1.5"/>
+            `;
+
+            // Grid Jarak Horisontal (m)
+            for (let d = -145; d <= 635; d += 60) {
+                const gx = toSvgX(d);
+                svg += `
+                    <line x1="${gx}" y1="30" x2="${gx}" y2="470" stroke="#1e293b" stroke-dasharray="3,3"/>
+                    <text x="${gx}" y="488" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono" font-size="9">${d}</text>
+                `;
+            }
+            svg += `<text x="510" y="508" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" font-weight="bold">Jarak (m)</text>`;
+
+            // Grid Elevasi Vertikal (m)
+            for (let el = -10; el <= 160; el += 20) {
+                const gy = toSvgY(el);
+                svg += `
+                    <line x1="50" y1="${gy}" x2="970" y2="${gy}" stroke="#1e293b" stroke-dasharray="3,3"/>
+                    <text x="42" y="${gy + 3}" text-anchor="end" fill="#64748b" font-family="JetBrains Mono" font-size="9">${el}</text>
+                    <text x="978" y="${gy + 3}" text-anchor="start" fill="#64748b" font-family="JetBrains Mono" font-size="9">${el}</text>
+                `;
+            }
+            svg += `<text x="24" y="240" transform="rotate(-90, 24, 240)" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" font-weight="bold">Elevasi (m)</text>`;
+
+            // Render Solid Lapisan Material
+            svg += `<path d="${pathCM}" fill="#bef264" fill-opacity="0.85" stroke="#a3e635" stroke-width="1.5"/>`;
+            svg += `<path d="${pathCL}" fill="#22c55e" fill-opacity="0.85" stroke="#16a34a" stroke-width="1.5"/>`;
+            svg += `<path d="${pathCH}" fill="#818cf8" fill-opacity="0.85" stroke="#6366f1" stroke-width="1.5"/>`;
+
+            // Garis Kontur Permukaan Atas
+            svg += `<path d="${groundPathD}" fill="none" stroke="#22c55e" stroke-width="3"/>`;
+
+            // Label Elevasi Trap Benched Sesuai Laporan
+            [
+                { x: 335, y: 104.728, label: 'EL. +104.728 mdpl' },
+                { x: 385, y: 114.752, label: 'EL. +114.752 mdpl' },
+                { x: 425, y: 134.792, label: 'EL. +134.792 mdpl' },
+                { x: 465, y: 149.246, label: 'EL. +149.246 mdpl' }
+            ].forEach(b => {
+                const bx = toSvgX(b.x), by = toSvgY(b.y);
+                svg += `
+                    <line x1="${bx}" y1="${by}" x2="${bx}" y2="${by - 22}" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="2,2"/>
+                    <text x="${bx}" y="${by - 25}" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono" font-size="9" font-weight="bold">${b.label}</text>
+                `;
+            });
+
+            // Garis Freatik Muka Air Piezometer (Biru)
+            const wy = toSvgY(38.0);
+            svg += `
+                <line x1="${toSvgX(-145)}" y1="${wy}" x2="${toSvgX(455)}" y2="${toSvgY(48.0)}" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="6,4"/>
+                <text x="${toSvgX(-110)}" y="${wy - 6}" fill="#7dd3fc" font-family="JetBrains Mono" font-size="9" font-weight="bold">Muka Freatik Rembesan SEEP/W</text>
+            `;
+
+            // Render Heatmap Busur Elips Oval Pelangi (Jika ON)
+            if (padCState.showArcs) {
+                padCState.trialOvalArcs.forEach(a => {
+                    const step = 6;
+                    let arcPath = `M ${toSvgX(a.entryX)},${toSvgY(getOvalSlipY(a.entryX, a.entryX, a.exitX, a.deepestX, a.deepestY, 149.246))}`;
+                    for (let sx = a.entryX + step; sx <= a.exitX; sx += step) {
+                        const sy = getOvalSlipY(sx, a.entryX, a.exitX, a.deepestX, a.deepestY, 149.246);
+                        arcPath += ` L ${toSvgX(sx)},${toSvgY(sy)}`;
+                    }
+                    svg += `<path d="${arcPath}" fill="none" stroke="${a.color}" stroke-width="1.2" stroke-opacity="0.8"/>`;
+                });
+            }
+
+            // Render Garis Pias Irisan Vertikal (Slices)
+            if (padCState.showSlices && padCState.slices.length > 0) {
+                padCState.slices.forEach(sl => {
+                    const sx = toSvgX(sl.xMid);
+                    const syTop = toSvgY(sl.yGround);
+                    const syBot = toSvgY(sl.yBase);
+                    svg += `
+                        <line x1="${sx}" y1="${syTop}" x2="${sx}" y2="${syBot}" stroke="#0f172a" stroke-width="1.4" stroke-opacity="0.95"/>
+                        <circle cx="${sx}" cy="${syBot}" r="1.8" fill="#000000"/>
+                    `;
+                });
+            }
+
+            // Render Busur Gelincir Elips Oval Kritis Utama (Garis Putih Tebal)
+            const crit = padCState.critOval;
+            const critStep = 4;
+            let critPath = `M ${toSvgX(crit.entryX)},${toSvgY(getOvalSlipY(crit.entryX, crit.entryX, crit.exitX, crit.deepestX, crit.deepestY, 149.246))}`;
+            for (let cx = crit.entryX + critStep; cx <= crit.exitX; cx += critStep) {
+                const cy = getOvalSlipY(cx, crit.entryX, crit.exitX, crit.deepestX, crit.deepestY, 149.246);
+                critPath += ` L ${toSvgX(cx)},${toSvgY(cy)}`;
+            }
+            svg += `<path d="${critPath}" fill="none" stroke="#ffffff" stroke-width="3.8"/>`;
+
+            // Titik Pusat Rotasi Kritis (Titik Merah di Atas Lereng)
+            const pRotX = toSvgX(crit.center.x);
+            const pRotY = toSvgY(crit.center.y);
+            svg += `
+                <circle cx="${pRotX}" cy="${pRotY}" r="5.5" fill="#f43f5e" stroke="#ffffff" stroke-width="1.5"/>
+                <text x="${pRotX}" y="${pRotY - 10}" text-anchor="middle" fill="#ffffff" font-family="Orbitron" font-size="13" font-weight="900" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.85))">${padCState.currentFoS.toFixed(3)}</text>
+            `;
+
+            // Legenda Heatmap Factor of Safety GeoStudio
+            svg += `
+                <g transform="translate(390, 48)">
+                    <rect x="0" y="0" width="125" height="175" rx="6" fill="#020617" fill-opacity="0.9" stroke="#94a3b8" stroke-width="1.2"/>
+                    <text x="62" y="16" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono" font-size="9.5" font-weight="bold">Factor of Safety</text>
+                    <rect x="10" y="24" width="10" height="10" fill="#dc2626"/><text x="26" y="32" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">3.733 - 3.833</text>
+                    <rect x="10" y="39" width="10" height="10" fill="#ea580c"/><text x="26" y="47" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">3.833 - 3.933</text>
+                    <rect x="10" y="54" width="10" height="10" fill="#f59e0b"/><text x="26" y="62" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">3.933 - 4.033</text>
+                    <rect x="10" y="69" width="10" height="10" fill="#84cc16"/><text x="26" y="77" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">4.033 - 4.133</text>
+                    <rect x="10" y="84" width="10" height="10" fill="#10b981"/><text x="26" y="92" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">4.133 - 4.233</text>
+                    <rect x="10" y="99" width="10" height="10" fill="#14b8a6"/><text x="26" y="107" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">4.233 - 4.333</text>
+                    <rect x="10" y="114" width="10" height="10" fill="#06b6d4"/><text x="26" y="122" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">4.333 - 4.433</text>
+                    <rect x="10" y="129" width="10" height="10" fill="#0284c7"/><text x="26" y="137" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">4.433 - 4.533</text>
+                    <rect x="10" y="144" width="10" height="10" fill="#2563eb"/><text x="26" y="152" fill="#e2e8f0" font-family="JetBrains Mono" font-size="8.5">&ge; 4.633</text>
+                </g>
+            `;
+
+            // Tabel Sifat Material Eksak Laporan
+            const gCL = document.getElementById('inpGammaCL')?.value || 18.5;
+            const cCL = document.getElementById('inpC_CL')?.value || 16.48;
+            const phiCL = document.getElementById('inpPhiCL')?.value || 14.84;
+
+            const gCM = document.getElementById('inpGammaCM')?.value || 20.0;
+            const cCM = document.getElementById('inpC_CM')?.value || 69.25;
+            const phiCM = document.getElementById('inpPhiCM')?.value || 30.23;
+
+            const gCH = document.getElementById('inpGammaCH')?.value || 20.0;
+            const cCH = document.getElementById('inpC_CH')?.value || 79.29;
+            const phiCH = document.getElementById('inpPhiCH')?.value || 30.23;
+
+            svg += `
+                <g transform="translate(390, 355)">
+                    <rect x="0" y="0" width="260" height="84" rx="4" fill="#020617" fill-opacity="0.94" stroke="#94a3b8" stroke-width="1.2"/>
+                    <line x1="0" y1="20" x2="260" y2="20" stroke="#94a3b8" stroke-width="1"/>
+                    <line x1="0" y1="41" x2="260" y2="41" stroke="#94a3b8" stroke-width="0.8"/>
+                    <line x1="0" y1="62" x2="260" y2="62" stroke="#94a3b8" stroke-width="0.8"/>
+                    <text x="8" y="14" fill="#cbd5e1" font-family="JetBrains Mono" font-size="8" font-weight="bold">Color</text>
+                    <text x="32" y="14" fill="#cbd5e1" font-family="JetBrains Mono" font-size="8" font-weight="bold">Name</text>
+                    <text x="75" y="14" fill="#cbd5e1" font-family="JetBrains Mono" font-size="8" font-weight="bold">Model</text>
+                    <text x="145" y="14" fill="#cbd5e1" font-family="JetBrains Mono" font-size="8" font-weight="bold">Unit Wt</text>
+                    <text x="190" y="14" fill="#cbd5e1" font-family="JetBrains Mono" font-size="8" font-weight="bold">Cohesion</text>
+                    <text x="235" y="14" fill="#cbd5e1" font-family="JetBrains Mono" font-size="8" font-weight="bold">Phi'</text>
+
+                    <!-- Baris 1: 2. CL -->
+                    <rect x="8" y="25" width="10" height="10" fill="#22c55e" stroke="#000"/>
+                    <text x="32" y="34" fill="#ffffff" font-family="JetBrains Mono" font-size="8">2. CL</text>
+                    <text x="75" y="34" fill="#ffffff" font-family="JetBrains Mono" font-size="7.5">Mohr-Coulomb</text>
+                    <text x="147" y="34" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${gCL}</text>
+                    <text x="192" y="34" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${cCL}</text>
+                    <text x="237" y="34" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${phiCL}°</text>
+
+                    <!-- Baris 2: 3. CM -->
+                    <rect x="8" y="46" width="10" height="10" fill="#bef264" stroke="#000"/>
+                    <text x="32" y="55" fill="#ffffff" font-family="JetBrains Mono" font-size="8">3. CM</text>
+                    <text x="75" y="55" fill="#ffffff" font-family="JetBrains Mono" font-size="7.5">Mohr-Coulomb</text>
+                    <text x="147" y="55" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${gCM}</text>
+                    <text x="192" y="55" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${cCM}</text>
+                    <text x="237" y="55" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${phiCM}°</text>
+
+                    <!-- Baris 3: 4. CH -->
+                    <rect x="8" y="67" width="10" height="10" fill="#818cf8" stroke="#000"/>
+                    <text x="32" y="76" fill="#ffffff" font-family="JetBrains Mono" font-size="8">4. CH</text>
+                    <text x="75" y="76" fill="#ffffff" font-family="JetBrains Mono" font-size="7.5">Mohr-Coulomb</text>
+                    <text x="147" y="76" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${gCH}</text>
+                    <text x="192" y="76" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${cCH}</text>
+                    <text x="237" y="76" fill="#ffffff" font-family="JetBrains Mono" font-size="8">${phiCH}°</text>
+                </g>
+            `;
+
+            g.innerHTML = svg;
+        }
+
+        function toggleHeatmapArcs() {
+            padCState.showArcs = !padCState.showArcs;
+            const btn = document.getElementById('btnToggleArcs');
+            btn.className = padCState.showArcs
+                ? 'px-2.5 py-1 rounded bg-emerald-700 text-white font-bold text-[10.5px] cursor-pointer'
+                : 'px-2.5 py-1 rounded bg-slate-800 text-slate-400 font-bold text-[10.5px] cursor-pointer';
+            renderSlope2dSVG();
+        }
+
+        function toggleSlicesLines() {
+            padCState.showSlices = !padCState.showSlices;
+            const btn = document.getElementById('btnToggleSlices');
+            btn.className = padCState.showSlices
+                ? 'px-2.5 py-1 rounded bg-cyan-800 text-white font-bold text-[10.5px] cursor-pointer'
+                : 'px-2.5 py-1 rounded bg-slate-800 text-slate-400 font-bold text-[10.5px] cursor-pointer';
+            renderSlope2dSVG();
+        }
+
+        function downloadSlope2dPNG() {
+            const svg = document.getElementById('slope2dSvg');
+            const ser = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([ser], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = function() {
+                const cv = document.createElement('canvas');
+                cv.width = 2000; cv.height = 1040;
+                const cx = cv.getContext('2d');
+                cx.fillStyle = '#030c1c';
+                cx.fillRect(0, 0, cv.width, cv.height);
+                cx.drawImage(img, 0, 0, cv.width, cv.height);
+                URL.revokeObjectURL(url);
+                const a = document.createElement('a');
+                a.download = `GeoStudio_SLOPEW_TSF_PAD_C_EXT_FoS_${padCState.currentFoS}.png`;
+                a.href = cv.toDataURL('image/png');
+                a.click();
+            };
+            img.src = url;
+        }
+
+        // =====================================================================
+        // 5. ENGINE 3D SLOPE3D OVAL BOWL REALISTIS (THREE.JS)
+        // =====================================================================
+        let slope3D = {
+            scene: null, camera: null, renderer: null, controls: null,
+            terrainGroup: null, ovalBowlMesh: null,
+            rotating: true, showBowl: true
+        };
+
+        function initSlope3DViewport() {
+            const container = document.getElementById('slope3dCanvas');
+            if (!container || typeof THREE === 'undefined') return;
+            container.innerHTML = '';
+            const W = Math.max(container.clientWidth || 600, 320);
+            const H = Math.max(container.clientHeight || 480, 320);
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617);
+
+            const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 2000);
+            camera.position.set(170, 120, 200);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(W, H);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            let controls = null;
+            if (typeof THREE.OrbitControls !== 'undefined') {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.target.set(0, 35, 0);
+            }
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const sun = new THREE.DirectionalLight(0xfffbeb, 1.25);
+            sun.position.set(160, 260, 120);
+            sun.castShadow = true;
+            scene.add(sun);
+
+            const grid = new THREE.GridHelper(320, 32, 0x10b981, 0x1e293b);
+            grid.position.y = -1;
+            scene.add(grid);
+
+            const terrainGroup = new THREE.Group();
+            scene.add(terrainGroup);
+
+            slope3D = {
+                scene, camera, renderer, controls,
+                terrainGroup, ovalBowlMesh: null,
+                rotating: true, showBowl: true
+            };
+
+            buildSlope3DMesh();
+
+            function animate3D() {
+                requestAnimationFrame(animate3D);
+                if (slope3D.controls) slope3D.controls.update();
+                if (slope3D.rotating && slope3D.terrainGroup) {
+                    slope3D.terrainGroup.rotation.y += 0.0028;
+                }
+                renderer.render(scene, camera);
+            }
+            animate3D();
+        }
+
+        function buildSlope3DMesh() {
+            if (!slope3D.terrainGroup) return;
+            const grp = slope3D.terrainGroup;
+            while (grp.children.length > 0) grp.remove(grp.children[0]);
+
+            // Model Parametrik Terrain Multi-Solid Pad C Ext (Solid 545, 547, 549)
+            const nx = 50;
+            const ny = 40;
+            const lenX = 240;
+            const widthY = 150;
+
+            const geom = new THREE.PlaneGeometry(lenX, widthY, nx, ny);
+            geom.rotateX(-Math.PI / 2);
+
+            const pos = geom.attributes.position;
+            const colors = [];
+
+            for (let i = 0; i < pos.count; i++) {
+                const px = pos.getX(i);
+                const py = pos.getZ(i);
+
+                let elev = 0;
+                const relX = px + lenX / 2;
+
+                if (relX < 55) {
+                    elev = 8.0; // Lembah toe
+                } else if (relX < 175) {
+                    const benchRun = (relX - 55);
+                    const benchStep = Math.floor(benchRun / 30);
+                    const rem = benchRun % 30;
+                    const rise = Math.min(rem * 0.85, 14);
+                    elev = 8.0 + benchStep * 14 + rise;
+                } else {
+                    elev = 72.0; // Crest puncak
+                }
+
+                pos.setY(i, elev);
+
+                // Warna 3 Blok Lateral Solid Dokumen
+                // Solid 545 (Hijau Muda 3.CM), Solid 547 (Hijau 2.CL), Solid 549 (Ungu 4.CH)
+                const c = new THREE.Color();
+                if (py < -26) {
+                    c.setHex(0xbef264); // 3.CM Hijau Muda
+                } else if (py <= 24) {
+                    c.setHex(0x22c55e); // 2.CL Hijau
+                } else {
+                    c.setHex(0x818cf8); // 4.CH Ungu
+                }
+                colors.push(c.r, c.g, c.b);
+            }
+
+            geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geom.computeVertexNormals();
+
+            const mat = new THREE.MeshStandardMaterial({
+                vertexColors: true,
+                roughness: 0.65,
+                metalness: 0.1,
+                side: THREE.DoubleSide
+            });
+
+            const terrainMesh = new THREE.Mesh(geom, mat);
+            grp.add(terrainMesh);
+
+            // =========================================================
+            // MANGKUK OVAL BOWL REALISTIS SESUAI FOTO SLOPE3D PSO
+            // =========================================================
+            // Membuat mangkuk cekung elipsoid memanjang dengan cincin warna konsentris
+            const bowlGroup = new THREE.Group();
+
+            const bowlGeom = new THREE.SphereGeometry(42, 40, 24, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+            bowlGeom.scale(1.45, 0.45, 0.85); // Bentuk sendok elips memanjang (spoon bowl)
+
+            const bowlMat = new THREE.MeshPhysicalMaterial({
+                color: 0x1e3a8a, // Biru dasar
+                roughness: 0.25,
+                transmission: 0.35,
+                opacity: 0.85,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            const bowlMesh = new THREE.Mesh(bowlGeom, bowlMat);
+            bowlMesh.position.set(12, 38, 0);
+            bowlMesh.rotation.z = 0.22; // Miring searah lereng
+            bowlGroup.add(bowlMesh);
+
+            // Cincin Kontur Heatmap Konsentris Pelangi (Red 4.712 - 4.812 s/d Blue >= 5.612)
+            const ringColors = [0xdc2626, 0xea580c, 0xf59e0b, 0x84cc16, 0x10b981, 0x06b6d4, 0x2563eb];
+            ringColors.forEach((col, idx) => {
+                const scaleF = 1.0 - (idx * 0.08);
+                const ringGeom = new THREE.RingGeometry(38 * scaleF, 40 * scaleF, 36);
+                const ringMat = new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide });
+                const ring = new THREE.Mesh(ringGeom, ringMat);
+                ring.position.set(12, 39 + idx * 0.4, 0);
+                ring.rotation.x = Math.PI / 2;
+                ring.rotation.z = 0.22;
+                bowlGroup.add(ring);
+            });
+
+            grp.add(bowlGroup);
+            slope3D.ovalBowlMesh = bowlGroup;
+        }
+
+        function toggle3DRotation() {
+            slope3D.rotating = !slope3D.rotating;
+            document.getElementById('btnToggleRot').textContent = `Auto-Rotate: ${slope3D.rotating ? 'ON' : 'OFF'}`;
+        }
+
+        function toggle3DSlipBowl() {
+            if (!slope3D.ovalBowlMesh) return;
+            slope3D.showBowl = !slope3D.showBowl;
+            slope3D.ovalBowlMesh.visible = slope3D.showBowl;
+            document.getElementById('btnToggleBowl').textContent = `Oval Bowl: ${slope3D.showBowl ? 'ON' : 'OFF'}`;
+        }
+
+        function set3DCameraView(view) {
+            if (!slope3D.camera || !slope3D.controls) return;
+            slope3D.rotating = false;
+            document.getElementById('btnToggleRot').textContent = 'Auto-Rotate: OFF';
+
+            if (view === 'front') {
+                slope3D.camera.position.set(0, 45, 230);
+            } else if (view === 'top') {
+                slope3D.camera.position.set(0, 240, 0);
+            } else {
+                slope3D.camera.position.set(170, 120, 200);
+            }
+            slope3D.controls.target.set(0, 35, 0);
+            slope3D.controls.update();
+        }
+
+        // =====================================================================
+        // 6. GRAFIK ANALITIK MULTI-METODE (CHART.JS)
+        // =====================================================================
+        function switchSlopeChart(mode) {
+            currentSlopeChartMode = mode;
+            ['algorithms', 'seismic', 'piezometer'].forEach(m => {
+                const btn = document.getElementById('btnChart' + m.charAt(0).toUpperCase() + m.slice(1, 4));
+                if (btn) {
+                    btn.className = (m === mode)
+                        ? 'px-2.5 py-1 rounded bg-emerald-600 text-slate-950 font-black cursor-pointer'
+                        : 'px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white cursor-pointer';
+                }
+            });
+            updateSlopeAnalyticsChart();
+        }
+
+        function updateSlopeAnalyticsChart() {
+            const ctx = document.getElementById('slopeAnalyticsChart')?.getContext('2d');
+            if (!ctx) return;
+            if (slopeChartInstance) slopeChartInstance.destroy();
+
+            if (currentSlopeChartMode === 'algorithms') {
+                slopeChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [
+                            'Cuckoo Search (CSA 2D)',
+                            'Particle Swarm (PSO 2D)',
+                            'Differential Evolution (DE 2D)',
+                            'Entry and Exit (Klasik 2D)',
+                            'SLOPE3D PSO (Oval Bowl 3D)'
+                        ],
+                        datasets: [
+                            {
+                                label: 'Faktor Keamanan (FoS Terhitung)',
+                                data: [3.734, 3.733, 3.733, 3.908, 4.712],
+                                backgroundColor: ['#f43f5e', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6'],
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Batas Kritis Aman Statik (FK = 1.50)',
+                                data: [1.5, 1.5, 1.5, 1.5, 1.5],
+                                type: 'line',
+                                borderColor: '#ef4444',
+                                borderDash: [6, 4],
+                                borderWidth: 2,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#e2e8f0', font: { family: 'JetBrains Mono', size: 10 } } } },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                            y: { beginAtZero: true, max: 5.5, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } }
+                        }
+                    }
+                });
+            } else if (currentSlopeChartMode === 'seismic') {
+                slopeChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Kondisi Statik (Tanpa Gempa)', 'Gempa OBE (T=100 thn, PGA 0.19g)', 'Gempa MDE (T=5000 thn, PGA 0.52g)'],
+                        datasets: [
+                            {
+                                label: 'FoS Terhitung (Metode CSA)',
+                                data: [3.734, 2.450, 1.620],
+                                backgroundColor: ['#10b981', '#06b6d4', '#f59e0b'],
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Batas Syarat Minimum FK Dokumen',
+                                data: [1.50, 1.20, 1.00],
+                                type: 'line',
+                                borderColor: '#f43f5e',
+                                borderWidth: 2,
+                                pointRadius: 5
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#e2e8f0', font: { family: 'JetBrains Mono', size: 10 } } } },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                            y: { beginAtZero: true, max: 4.5, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } }
+                        }
+                    }
+                });
+            } else {
+                slopeChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['PZ-1 (Kaki Hulu)', 'PZ-2 (Trap Berm +104)', 'PZ-3 (Krest +149)'],
+                        datasets: [
+                            {
+                                label: 'Elevasi Muka Air Tanah (mdpl)',
+                                data: [38.0, 96.5, 128.0],
+                                borderColor: '#38bdf8',
+                                backgroundColor: 'rgba(56,189,248,0.25)',
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Elevasi Piezometer (mdpl)',
+                                data: [43.0, 104.73, 149.25],
+                                borderColor: '#f59e0b',
+                                borderDash: [5, 4],
+                                tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#e2e8f0', font: { family: 'JetBrains Mono', size: 10 } } } },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } }
+                        }
+                    }
+                });
+            }
+        }
+
+        // =====================================================================
+        // 7. KONTROL INTERAKSI & RUN ANALISIS
+        // =====================================================================
+        function applyLoadCondition() {
+            const cond = document.getElementById('selLoadCondition').value;
+            padCState.loadCondition = cond;
+
+            if (cond === 'static') {
+                padCState.kh = 0.00;
+                padCState.currentFoS = padCState.fosValues[padCState.algorithm] || 3.734;
+            } else if (cond === 'obe') {
+                padCState.kh = 0.095;
+                padCState.currentFoS = Number(((padCState.fosValues[padCState.algorithm] || 3.734) * 0.656).toFixed(3));
+            } else if (cond === 'mde') {
+                padCState.kh = 0.260;
+                padCState.currentFoS = Number(((padCState.fosValues[padCState.algorithm] || 3.734) * 0.434).toFixed(3));
+            }
+
+            document.getElementById('lblKhVal').textContent = `kh = ${padCState.kh.toFixed(3)}`;
+            runAnalysis();
+        }
+
+        function runAnalysis() {
+            const alg = document.getElementById('selAlgorithm').value;
+            padCState.algorithm = alg;
+
+            // Sesuaikan nilai FoS dasar
+            const base = padCState.fosValues[alg] || 3.734;
+            if (padCState.loadCondition === 'static') {
+                padCState.currentFoS = base;
+            } else if (padCState.loadCondition === 'obe') {
+                padCState.currentFoS = Number((base * 0.656).toFixed(3));
+            } else {
+                padCState.currentFoS = Number((base * 0.434).toFixed(3));
+            }
+
+            // Update KPI cards
+            document.getElementById('kpiFosCsa').textContent = padCState.currentFoS.toFixed(3);
+            solveOvalSlices();
+            generateRealisticOvalTrialArcs();
+            renderSlope2dSVG();
+            updateSlopeAnalyticsChart();
+        }
+
+        // Navigasi Tab Workspace
+        function switchCenterTab(tab) {
+            const mapTabs = {
+                workflow: { pane: 'paneWorkflow', btn: 'tabBtnWorkflow' },
+                slope2d:  { pane: 'paneSlope2d',  btn: 'tabBtnSlope2d' },
+                slope3d:  { pane: 'paneSlope3d',  btn: 'tabBtnSlope3d' },
+                seepage:  { pane: 'paneSeepage',  btn: 'tabBtnSeepage' },
+                map:      { pane: 'paneMap',      btn: 'tabBtnMap' }
+            };
+            Object.keys(mapTabs).forEach(k => {
+                const p = document.getElementById(mapTabs[k].pane);
+                const b = document.getElementById(mapTabs[k].btn);
+                if (p) p.classList.toggle('hidden', k !== tab);
+                if (b) {
+                    b.className = (k === tab)
+                        ? 'px-3 py-1.5 rounded-xl bg-emerald-600 text-slate-950 font-black cursor-pointer shadow transition'
+                        : 'px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-950 text-emerald-300 border border-emerald-500/60 font-bold cursor-pointer transition';
+                }
+            });
+
+            if (tab === 'slope3d' && !slope3D.renderer) setTimeout(initSlope3DViewport, 80);
+            if (tab === 'map') {
+                if (!slopeLeafletMap) {
+                    // Fokus di Koordinat Tapak Dokumen: Lat -8.5985, Long 114.0483 (Pesanggaran, Banyuwangi)
+                    slopeLeafletMap = L.map('slopeLeafletMap', { center: [-8.5985, 114.0483], zoom: 14 });
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(slopeLeafletMap);
+
+                    L.marker([-8.5985, 114.0483]).addTo(slopeLeafletMap)
+                        .bindPopup(`<b>TSF PAD C EXTEND (DAM 5 &amp; 6A)</b><br>PT Bumi Suksesindo, Banyuwangi<br>Lat: -8.5985°, Long: 114.0483°<br>Status: FoS = 3.734 (AMAN)`)
+                        .openPopup();
+                }
+                setTimeout(() => slopeLeafletMap.invalidateSize(), 150);
+            }
+        }
+
+        // =====================================================================
+        // 8. EKSPOR EXCEL & PUSAT EKSPOR 13 LAPORAN WORD (.DOC)
+        // =====================================================================
+        function exportSlicesExcel() {
+            const rows = padCState.slices.map(sl => ({
+                'Pias #': sl.id,
+                'X Tengah (m)': sl.xMid,
+                'Elevasi Tanah (m)': sl.yGround,
+                'Elevasi Bidang Gelincir Elips (m)': sl.yBase,
+                'Tinggi Pias h (m)': sl.hSlice,
+                'Sudut Kemiringan Dasar Alpha (deg)': sl.alphaDeg,
+                'Berat Pias W (kN)': sl.W,
+                'Tegangan Normal Efektif Sigma (kPa)': sl.sigmaPrime,
+                'Kuat Geser Tau (kPa)': sl.shearStrength,
+                'Tekanan Air Pori u (kPa)': sl.u
+            }));
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Pias_TSF_PAD_C');
+            XLSX.writeFile(wb, `Data_Pias_TSF_Pad_C_Extend_FoS_${padCState.currentFoS}.xlsx`);
+        }
+
+        const PAD_C_WORD_TOPICS = [
+            { n: '01', slug: 'RingkasanEksekutifDecommissioning', title: 'RINGKASAN EKSEKUTIF ANALISIS KESTABILAN TSF PAD C EXTEND (DECOMMISSIONING DAM 5 & 6A)' },
+            { n: '02', slug: 'Karakteristik3LitologiPondasi', title: 'KARAKTERISASI GEOTEKNIK 3 SATUAN LITOLOGI PONDASI TAPAK TUJUH BUKIT BANYUWANGI' },
+            { n: '03', slug: 'MetodologiWorkflowDanZonasiMaterial', title: 'METODOLOGI WORKFLOW 6 TAHAP & PARAMETER MOHR-COULOMB 2.CL, 3.CM, 4.CH' },
+            { n: '04', slug: 'AnalisisCuckooSearchAlgorithm2D', title: 'HASIL ANALISIS STABILITAS 2D METODE CUCKOO SEARCH ALGORITHM (CSA) — FOS 3.734' },
+            { n: '05', slug: 'AnalisisParticleSwarmDanDiffEvolution', title: 'KOMPARASI ALGORITMA HEURISTIK PARTICLE SWARM (PSO) & DIFFERENTIAL EVOLUTION (DE)' },
+            { n: '06', slug: 'AnalisisEntryExitDanMetodeKlasik', title: 'ANALISIS METODE KLASIK ENTRY AND EXIT SEBAGAI PEMBANDING EVALUASI' },
+            { n: '07', slug: 'Pemodelan3DSLOPE3DMultiSolid', title: 'HASIL ANALISIS 3D DENGAN METODE PSO & MANGKUK GELINCIR ELIPSOID — FOS 4.712' },
+            { n: '08', slug: 'EvaluasiBebanGempaOBEDanMDE', title: 'EVALUASI BEBAN GEMPA OPERATED BASED (OBE) & MAXIMUM DESIGN EARTHQUAKE (MDE)' },
+            { n: '09', slug: 'AnalisisKeamananRembesanSEEPW', title: 'ANALISIS KEAMANAN REMBESAN AIR: EVALUASI TEKANAN UPLIFT & EROSI BULUH (PIPING)' },
+            { n: '10', slug: 'EvaluasiMonitoringPiezometerAktual', title: 'EVALUASI DATA MONITORING INSTRUMENTASI PIEZOMETER TAPAK PAD C EXTEND' },
+            { n: '11', slug: 'MitigasiDanPengupasanLumpurSedimen', title: 'PEDOMAN PENGUPASAN LAPISAN LUMPUR (REMOVE MUD) & PROTEKSI EROSI MUKA LERENG' },
+            { n: '12', slug: 'EvaluasiKebutuhanCounterweight', title: 'EVALUASI KEBUTUHAN MODIFIKASI DESAIN, PELANDAIAN LERENG & COUNTERWEIGHT' },
+            { n: '13', slug: 'KesimpulanKelayakanDanSertifikasi', title: 'KESIMPULAN KELAYAKAN GEOTEKNIK INTEGRITAS BENDUNGAN SESUAI SNI 8460:2017' }
+        ];
+
+        function openWordReportsModal() {
+            const list = document.getElementById('wordReportsList');
+            list.innerHTML = PAD_C_WORD_TOPICS.map((t, i) => `
+                <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <span class="text-[10px] font-black text-sky-400">TOPIK #${t.n}</span>
+                        <div class="text-xs font-bold text-white truncate">${t.title}</div>
+                    </div>
+                    <button type="button" onclick="downloadSinglePadCWord(${i})" class="px-3 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-600 text-white text-[10px] font-black shrink-0 cursor-pointer">
+                        <i class="fa-solid fa-file-word mr-1"></i> WORD
+                    </button>
+                </div>
+            `).join('');
+            document.getElementById('wordReportsModal').classList.remove('hidden');
+        }
+        function closeWordReportsModal() { document.getElementById('wordReportsModal').classList.add('hidden'); }
+
+        function downloadSinglePadCWord(idx) {
+            const t = PAD_C_WORD_TOPICS[idx];
+            const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="utf-8"><title>${t.title}</title></head>
+            <body style="font-family:Arial,sans-serif;padding:24px;">
+                <h2 style="color:#0f172a;border-bottom:3px solid #10b981;padding-bottom:8px;">[${t.n}] ${t.title}</h2>
+                <p><b>Proyek:</b> TSF PAD C Extend (Decommissioning &amp; Breaching Dam 5 &amp; 6A) | <b>Pemilik:</b> PT Bumi Suksesindo | <b>Lokasi:</b> Sumberagung, Pesanggaran, Banyuwangi (-8.5985°, 114.0483°) | <b>Peneliti:</b> Ir. Mohamad Hartadi, S.T. (PT Cipta Harmoni Selaras) | <b>Dicetak:</b> ${new Date().toLocaleString('id-ID')}</p>
+                <h3>A. Hasil Evaluasi Numerik Kestabilan Lereng</h3>
+                <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:10pt;margin-bottom:14px;">
+                    <tr style="background:#0f172a;color:#ffffff;"><th>Metode Analisis</th><th>Kondisi Beban</th><th>FoS Terhitung</th><th>FK Syarat</th><th>Keterangan</th></tr>
+                    <tr><td>Cuckoo Search Algorithm (CSA 2D)</td><td>Statik (Tanpa Gempa)</td><td><b>3.734</b></td><td>&ge; 1.50</td><td>AMAN</td></tr>
+                    <tr><td>Differential Evolution (DE 2D)</td><td>Statik (Tanpa Gempa)</td><td><b>3.733</b></td><td>&ge; 1.50</td><td>AMAN</td></tr>
+                    <tr><td>Particle Swarm Optimization (PSO 2D)</td><td>Statik (Tanpa Gempa)</td><td><b>3.733</b></td><td>&ge; 1.50</td><td>AMAN</td></tr>
+                    <tr><td>Entry and Exit (Klasik 2D)</td><td>Statik (Tanpa Gempa)</td><td><b>3.908</b></td><td>&ge; 1.50</td><td>AMAN</td></tr>
+                    <tr><td>SLOPE3D Multi-Solid (PSO 3D)</td><td>Statik (Tanpa Gempa)</td><td><b>4.712</b></td><td>&ge; 1.50</td><td>AMAN</td></tr>
+                    <tr><td>Cuckoo Search (Gempa OBE)</td><td>T=100 thn (PGA 0.19g)</td><td><b>2.450</b></td><td>&ge; 1.20</td><td>AMAN</td></tr>
+                    <tr><td>Cuckoo Search (Gempa MDE)</td><td>T=5000 thn (PGA 0.52g)</td><td><b>1.620</b></td><td>&ge; 1.00</td><td>AMAN</td></tr>
+                </table>
+                <h3>B. Keamanan Terhadap Rembesan SEEP/W</h3>
+                <p style="text-align:justify;">Hasil evaluasi rembesan menunjukkan FK uplift sebesar <b>2.45</b> (syarat &ge; 1.50) dan FK erosi buluh/piping sebesar <b>4.82</b> (syarat &ge; 3.00). Bendungan aman tanpa risiko erosi internal.</p>
+                <h3>C. Kesimpulan &amp; Rekomendasi</h3>
+                <p style="background:#ecfdf5;border-left:4px solid #059669;padding:10px;"><b>Kesimpulan:</b> Tidak diperlukan modifikasi desain, pelandaian sudut lereng, atau perkuatan counterweight tambahan. Desain penutupan fungsi TSF PAD C Extend memadai dan memenuhi seluruh kriteria keselamatan bendungan.</p>
+                <p style="margin-top:18px;font-size:9pt;color:#475569;">Disusun oleh GeoStudio Slope 2D &amp; 3D Pro v9.5 — <b>Ir. Mohamad Hartadi, S.T.</b></p>
+            </body></html>`;
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Laporan_PAD_C_Extend_${t.n}_${t.slug}.doc`;
+            a.click();
+        }
+
+        function exportAllWordReports() {
+            let i = 0;
+            function next() {
+                if (i >= PAD_C_WORD_TOPICS.length) return;
+                downloadSinglePadCWord(i);
+                i++;
+                setTimeout(next, 500);
+            }
+            next();
+        }
+
+        // =====================================================================
+        // 9. BUMI 3D ORBIT, JAM & SCREENSAVER
+        // =====================================================================
+        const EARTH_URLS = {
+            day: ['https://unpkg.com/three-globe@2.45.5/example/img/earth-blue-marble.jpg'],
+            clouds: ['https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_clouds_1024.png']
+        };
+
+        function createFullEarthWidget(containerId, speed = 0.002) {
+            const container = document.getElementById(containerId);
+            if (!container || typeof THREE === 'undefined') return;
+            container.innerHTML = '';
+            const size = Math.max(container.clientWidth || 140, 110);
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 1000);
+            camera.position.set(0, 0, 68);
+
+            let renderer;
+            try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
+            catch (e) { return; }
+            renderer.setSize(size, size);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            container.appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xdbeafe, 0.95));
+            const sun = new THREE.DirectionalLight(0xfffbeb, 1.3);
+            sun.position.set(80, 40, 80);
+            scene.add(sun);
+
+            const earthMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(18.5, 48, 48),
+                new THREE.MeshPhongMaterial({ color: 0x0284c7, shininess: 15 })
+            );
+            scene.add(earthMesh);
+
+            const loader = new THREE.TextureLoader();
+            loader.setCrossOrigin('anonymous');
+            loader.load(EARTH_URLS.day[0], tex => {
+                earthMesh.material.map = tex;
+                earthMesh.material.color.setHex(0xffffff);
+                earthMesh.material.needsUpdate = true;
+            });
+
+            const cloudMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(18.9, 40, 40),
+                new THREE.MeshPhongMaterial({ transparent: true, opacity: 0.85, depthWrite: false })
+            );
+            scene.add(cloudMesh);
+            loader.load(EARTH_URLS.clouds[0], cTex => {
+                cloudMesh.material.map = cTex;
+                cloudMesh.material.needsUpdate = true;
+            });
+
+            function tick() {
+                requestAnimationFrame(tick);
+                earthMesh.rotation.y += speed;
+                cloudMesh.rotation.y += speed * 1.45;
+                renderer.render(scene, camera);
+            }
+            tick();
+        }
+
+        // Chatbot AI
+        function toggleChatPanel() {
+            const p = document.getElementById('floatingChatPanel');
+            p.classList.toggle('hidden'); p.classList.toggle('flex');
+        }
+        function sendQuickChat(txt) {
+            document.getElementById('chatUserInput').value = txt;
+            processUserChat();
+        }
+        function processUserChat() {
+            const inp = document.getElementById('chatUserInput');
+            const q = inp.value.trim();
+            if (!q) return;
+            inp.value = '';
+            const box = document.getElementById('chatMessagesBox');
+            box.insertAdjacentHTML('beforeend', `<div class="p-2.5 rounded-xl bg-emerald-950 border border-emerald-500/40 text-right ml-auto max-w-[85%] text-emerald-100">${q}</div>`);
+
+            let reply = '';
+            const lower = q.toLowerCase();
+            if (lower.includes('elips') || lower.includes('oval') || lower.includes('spoon')) {
+                reply = 'Bidang gelincir elips oval (*spoon-shaped bowl*) terbentuk karena variasi kekuatan geser antar lapisan: bidang guling tertahan di dasar batuan keras dan melingkar bebas di zona timbunan lunak. Bentuk elips ini terbukti mereplikasi keruntuhan lereng nyata di tambang terbuka jauh lebih realistis daripada busur lingkaran murni.';
+            } else if (lower.includes('litologi') || lower.includes('batuan')) {
+                reply = 'Daerah TSF Pad C Extend memiliki 3 satuan litologi utama: 1) Andesite Ash Flow Tuff (UCS 10–35 MPa, rentan piping), 2) Andesite Dacitic Flow (UCS 60–120 MPa, tumpuan timbunan kokoh), dan 3) Porphyry Hornblende Andesite (UCS 80–140 MPa, tumpuan abutment tebing sangat masif).';
+            } else if (lower.includes('counterweight') || lower.includes('desain') || lower.includes('rekomendasi')) {
+                reply = 'Berdasarkan hasil analisis kestabilan statik (FoS 3.734), gempa OBE (FoS 2.45), gempa MDE (FoS 1.62), dan rembesan, seluruh nilai melampaui ambang batas minimum. Oleh karena itu, TIDAK DIPERLUKAN penambahan counterweight atau perkuatan tambahan pada TSF PAD C Extend.';
+            } else {
+                reply = `Hasil evaluasi TSF PAD C Extend: FoS CSA 2D = 3.734, FoS SLOPE3D = 4.712, Rembesan Uplift FK = 2.45, Piping FK = 4.82. Seluruh indikator berada dalam status STABIL AMAN.`;
+            }
+
+            setTimeout(() => {
+                box.insertAdjacentHTML('beforeend', `
+                    <div class="p-3 rounded-xl bg-slate-900 border border-cyan-500/40 text-slate-200 space-y-1 font-sans">
+                        <b class="text-cyan-300 font-mono block">🏔️ Konsultan Geoteknik PT CHS:</b>
+                        <div>${reply}</div>
+                    </div>
+                `);
+                box.scrollTop = box.scrollHeight;
+            }, 300);
+        }
+
+        // Direktori 61 My Aplikasi
+        const myAppsDirectory = [
+            {"u": "https://adikds.github.io/jarvis-ai/", "n": "JARVIS AI", "cat": "AI & Agent"},
+            {"u": "https://adikds.github.io/APEX-Foundations-v3.1-Geotechnical-AI-/", "n": "Apex Foundations", "cat": "Geoteknik & Sipil"},
+            {"u": "https://adikds.github.io/ANALISIS-PONDASI-TELAPAK-/", "n": "Analisis Pondasi", "cat": "Geoteknik & Sipil"},
+            {"u": "https://adikds.github.io/AASHTO-SOIL-CLASSIFIER/", "n": "AASHTO Soil", "cat": "Geoteknik & Sipil"},
+            {"u": "https://adikds.github.io/ATLAS-GEOTEKNIK/", "n": "Atlas Geoteknik", "cat": "Geoteknik & Sipil"},
+            {"u": "https://adikds.github.io/GeoStructPro-15-Essential-Geotechnical-Formulas/", "n": "GeoStructPro 15", "cat": "Geoteknik & Sipil"},
+            {"u": "https://adikds.github.io/GEOSTRUCT-PRO-20-FORMULA-GEOTECHNICAL/", "n": "GeoStruct Pro 20", "cat": "Geoteknik & Sipil"},
+            {"u": "https://adikds.github.io/UNIFIED-SOIL-CLASSIFICATION-SYSTEM/", "n": "USCS Soil", "cat": "Geoteknik & Sipil"},
+            {"u": "https://adikds.github.io/WAY-APU-DAM/", "n": "Way Apu Dam", "cat": "Bendungan & Hidrologi"},
+            {"u": "https://adikds.github.io/INTEGRATED-DAM-ANALYTICS-ASSESSMENT-SYSTEM/", "n": "Dam Analytics", "cat": "Bendungan & Hidrologi"},
+            {"u": "https://adikds-byte.github.io/BENDUNGAN-TAILING-COMMAND-CENTRE/", "n": "Tailing Dam Command Centre", "cat": "Geoteknik & Sipil"},
+            {"u": "https://adikds-byte.github.io/SoilLabKit-Pro-Master-Edition-V7.0/", "n": "SoilLabKit Pro", "cat": "Geoteknik & Sipil"},
+            {"u": "https://newbieonline7.blogspot.com/", "n": "My Blog Engineering & AI", "cat": "Blog Artikel & AI"}
+        ];
+
+        function openAppsModal() {
+            renderAppsDirectory('');
+            const m = document.getElementById('modalApps');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function closeAppsModal() {
+            const m = document.getElementById('modalApps');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        function renderAppsDirectory(q = '') {
+            const box = document.getElementById('appsGridContainer');
+            const lower = q.toLowerCase();
+            const list = myAppsDirectory.filter(a => a.n.toLowerCase().includes(lower) || a.cat.toLowerCase().includes(lower));
+            box.innerHTML = list.map((a, i) => `
+                <a href="${a.u}" target="_blank" rel="noopener noreferrer" class="p-2.5 rounded-xl bg-slate-900 border border-lime-500/40 hover:border-amber-400 flex justify-between items-center transition">
+                    <div>
+                        <div class="font-bold text-white text-xs">#${i + 1} ${a.n}</div>
+                        <span class="text-[9.5px] text-lime-300">${a.cat}</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-amber-400 text-xs"></i>
+                </a>
+            `).join('');
+        }
+
+        function openCreatorModal() {
+            document.getElementById('creatorModal').classList.remove('hidden');
+            if (!window._modalCreatorEarthMounted) {
+                setTimeout(() => {
+                    createFullEarthWidget('modalCreatorEarthCanvas', 0.0028);
+                    window._modalCreatorEarthMounted = true;
+                }, 80);
+            }
+        }
+        function closeCreatorModal() { document.getElementById('creatorModal').classList.add('hidden'); }
+
+        let APP_FONT = 100;
+        function injectCtrlGroups() {
+            const host = document.getElementById('ctrlGroupDash');
+            if (!host) return;
+            host.innerHTML = `
+                <div class="capsule-font">
+                    <button type="button" onclick="adjFont(-10)" class="cursor-pointer">A−</button>
+                    <span id="fontPctLbl" class="text-amber-300 text-[10px]">100%</span>
+                    <button type="button" onclick="adjFont(10)" class="cursor-pointer">A+</button>
+                </div>
+                <button type="button" onclick="window.open('https://adikds-byte.github.io/BENDUNGAN-TAILING-COMMAND-CENTRE/','_blank')" class="btn-dam-tailing">
+                    <i class="fa-solid fa-mountain-sun"></i> DAM TAILING CC
+                </button>
+            `;
+        }
+        function adjFont(d) {
+            APP_FONT = Math.max(85, Math.min(125, APP_FONT + d));
+            document.documentElement.style.fontSize = APP_FONT + '%';
+            const lbl = document.getElementById('fontPctLbl');
+            if (lbl) lbl.textContent = APP_FONT + '%';
+        }
+
+        function updateLiveClocks() {
+            const now = new Date();
+            const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+            const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+            const timeStr = now.toTimeString().slice(0, 8);
+            document.getElementById('topDashDate').textContent = dateStr;
+            document.getElementById('topDashTime').textContent = `${timeStr} WIB`;
+            document.getElementById('loadingClock').textContent = `${dateStr} • ${timeStr} WIB`;
+            document.getElementById('screensaverClock').textContent = timeStr;
+            document.getElementById('screensaverDate').textContent = `${dateStr} • ${timeStr} WIB`;
+        }
+
+        function toggleScreensaver(show) {
+            const el = document.getElementById('screensaverOverlay');
+            if (show) {
+                el.classList.remove('hidden'); el.classList.add('flex');
+                if (!window._ssEarthMounted) {
+                    setTimeout(() => { createFullEarthWidget('ssEarthCanvas', 0.0024); window._ssEarthMounted = true; }, 80);
+                }
+            } else {
+                el.classList.add('hidden'); el.classList.remove('flex');
+            }
+        }
+
+        function toggleThemeMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        }
+
+        function dismissLoadingScreen() {
+            const ov = document.getElementById('loadingOverlay');
+            if (!ov) return;
+            ov.style.opacity = '0';
+            ov.style.pointerEvents = 'none';
+            setTimeout(() => ov.style.display = 'none', 500);
+        }
+
+        // Inisialisasi Saat Halaman Dimuat
+        window.addEventListener('DOMContentLoaded', () => {
+            injectCtrlGroups();
+            updateLiveClocks();
+            setInterval(updateLiveClocks, 1000);
+
+            createFullEarthWidget('loadingEarthCanvas', 0.0026);
+            createFullEarthWidget('bgEarthCanvas', 0.0010);
+            createFullEarthWidget('footerCreditEarthCanvas', 0.0030);
+
+            let pct = 25;
+            const iv = setInterval(() => {
+                pct += 25;
+                const bar = document.getElementById('loadingProgressBar');
+                const lbl = document.getElementById('loadingPercent');
+                if (bar) bar.style.width = Math.min(100, pct) + '%';
+                if (lbl) lbl.textContent = Math.min(100, pct) + '%';
+                if (pct >= 100) {
+                    clearInterval(iv);
+                    setTimeout(dismissLoadingScreen, 400);
+                }
+            }, 300);
+
+            solveOvalSlices();
+            generateRealisticOvalTrialArcs();
+            renderSlope2dSVG();
+            updateSlopeAnalyticsChart();
+        });
+    </script>
+</body>
+</html>
