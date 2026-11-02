@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEOSTUDIO SLOPE 2D & 3D PRO v9.5 — TSF PAD C EXTEND PT BUMI SUKSESINDO (BANYUWANGI)</title>
+    <title>GEOSTUDIO SLOPE 2D & 3D PRO v9.6 — TSF PAD C EXTEND PT BUMI SUKSESINDO (BANYUWANGI)</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -139,6 +139,40 @@
         ::-webkit-scrollbar-track { background: rgba(2, 6, 23, 0.6); }
         ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.5); border-radius: 4px; }
     </style>
+<style>
+
+/* ============ v9.6: HUJAN, RISALAH, ANIMASI ============ */
+.rain-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6;display:none}
+.rain-layer.on{display:block}
+.rain-drop{position:absolute;top:-14%;width:1.5px;height:16px;border-radius:2px;
+  background:linear-gradient(180deg,rgba(56,189,248,0),rgba(56,189,248,.85));animation:rainFall linear infinite}
+@keyframes rainFall{0%{transform:translateY(-20px) translateX(0);opacity:0}
+ 10%{opacity:.9}90%{opacity:.55}100%{transform:translateY(640px) translateX(-18px);opacity:0}}
+.scn-card{position:relative;border-radius:14px;padding:10px 12px;border:1px solid rgba(148,163,184,.28);
+  background:linear-gradient(150deg,rgba(8,20,34,.96),rgba(3,10,18,.98));cursor:pointer;transition:.2s;overflow:hidden}
+.scn-card:hover{transform:translateY(-2px);border-color:rgba(34,211,238,.6)}
+.scn-card.active{box-shadow:0 0 0 1px rgba(34,211,238,.7),0 10px 26px rgba(16,185,129,.18)}
+.scn-card .glowline{position:absolute;left:0;top:0;bottom:0;width:3px}
+.scn-card .fos{font-family:'Orbitron',sans-serif;font-size:19px;font-weight:900;line-height:1}
+.scn-card .lbl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8}
+.scn-card .stat{font-size:9px;font-weight:800;letter-spacing:.1em;padding:2px 6px;border-radius:5px;display:inline-block;margin-top:5px}
+.pulse-ring{animation:scnPulse 2.4s ease-in-out infinite}
+@keyframes scnPulse{0%,100%{opacity:.55}50%{opacity:1}}
+.ris-block{border-radius:14px;padding:12px 14px;border:1px solid rgba(148,163,184,.24);
+  background:linear-gradient(160deg,rgba(9,22,36,.96),rgba(3,10,18,.98))}
+.ris-block h4{margin:0 0 6px;font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.ris-block p,.ris-block li{font-size:11px;line-height:1.65;color:#cbd5e1;margin:0 0 6px}
+.ris-block ul{margin:0;padding-left:16px}
+.ris-teknis{border-left:3px solid #22d3ee}
+.ris-saran{border-left:3px solid #f59e0b}
+.ris-kesimpulan{border-left:3px solid #10b981}
+.rain-inp{width:100%;padding:5px 8px;border-radius:8px;background:#020617;border:1px solid rgba(34,211,238,.35);
+  color:#e2f6ff;font-family:'JetBrains Mono',monospace;font-size:11px;outline:none}
+.rain-inp:focus{border-color:#22d3ee}
+.badge-rain{display:inline-block;padding:2px 7px;border-radius:999px;font-size:8.5px;letter-spacing:.14em;
+  background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.45);color:#7dd3fc}
+
+</style>
 </head>
 <body class="min-h-screen flex flex-col justify-between relative selection:bg-emerald-500 selection:text-slate-950 pb-20">
 
@@ -289,6 +323,9 @@
                     <button type="button" onclick="switchCenterTab('map')" id="tabBtnMap" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-950 text-emerald-300 border border-emerald-500/60 font-bold cursor-pointer transition">
                         📍 5. PETA BANYUWANGI
                     </button>
+                    <button type="button" onclick="switchCenterTab('risalah')" id="tabBtnRisalah" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-950 text-cyan-300 border border-cyan-500/60 font-bold cursor-pointer transition">
+                        🧾 6. RISALAH &amp; SKENARIO
+                    </button>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
@@ -389,6 +426,7 @@
                         <option value="static" selected>1. Statik (Tanpa Gempa, Syarat FK &ge; 1.50)</option>
                         <option value="obe">2. Gempa OBE (T=100 thn, PGA 0.19g, Syarat FK &ge; 1.20)</option>
                         <option value="mde">3. Gempa MDE (T=3000/5000 thn, PGA 0.52g, Syarat FK &ge; 1.00)</option>
+<option value="rain">4. Hujan Ekstrem + Infiltrasi Lereng (ru dinamis, Syarat FK &ge; 1.20)</option>
                     </select>
                     <div class="flex justify-between text-[10px] text-slate-400">
                         <span>Koefisien Seismik kh:</span>
@@ -603,6 +641,7 @@
                     <!-- VIEWPORT 2: SLOPE/W 2D BIDANG GELINCIR ELIPS OVAL REALISTIS      -->
                     <!-- ================================================================= -->
                     <div id="paneSlope2d" class="geostudio-grid p-3 sm:p-4 min-h-[540px] flex flex-col justify-between gap-3 relative select-none">
+<div class="rain-layer" id="rainLayer"></div>
                         <!-- Top Toolbar Toolbar SLOPE/W -->
                         <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950/90 border border-emerald-400/50 rounded-xl px-3 py-2 text-xs font-mono">
                             <div class="flex items-center gap-2 flex-wrap">
@@ -750,6 +789,54 @@
                     <!-- ================================================================= -->
                     <!-- VIEWPORT 5: WEBGIS PETA LOKASI BANYUWANGI (-8.5985, 114.0483)   -->
                     <!-- ================================================================= -->
+                    <!-- ================================================================= -->
+                    <!-- PANE RISALAH, SKENARIO GEMPA OBE/MDE & HUJAN + INFILTRASI (v9.6)  -->
+                    <!-- ================================================================= -->
+                    <div id="paneRisalah" class="hidden p-3 sm:p-4 bg-slate-950/95 space-y-3 max-h-[560px] overflow-y-auto font-mono text-[11px] text-slate-200">
+
+                        <!-- 4 kartu skenario -->
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <h3 class="font-tech text-xs font-black text-cyan-300 uppercase">
+                                <i class="fa-solid fa-scale-unbalanced-flip mr-1.5 text-cyan-400"></i>
+                                MATRIKS SKENARIO PEMBEBANAN — PAD C EXTEND
+                            </h3>
+                            <span class="badge-rain">PGA OBE 0.19g · MDE 0.52g</span>
+                        </div>
+                        <div id="scnCards" class="grid grid-cols-2 lg:grid-cols-4 gap-2"></div>
+
+                        <!-- input hujan & infiltrasi -->
+                        <div class="ris-block" style="border-left:3px solid #38bdf8">
+                            <h4 style="color:#7dd3fc"><i class="fa-solid fa-cloud-showers-heavy mr-1"></i> PARAMETER HUJAN &amp; INFILTRASI LERENG</h4>
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-1">
+                                <div><div class="lbl text-[9px] text-slate-400 uppercase mb-1">Intensitas (mm/jam)</div>
+                                    <input id="rInt" class="rain-inp" type="number" min="1" max="200" value="60" oninput="onRainInput()"></div>
+                                <div><div class="lbl text-[9px] text-slate-400 uppercase mb-1">Durasi (jam)</div>
+                                    <input id="rDur" class="rain-inp" type="number" min="1" max="72" value="6" oninput="onRainInput()"></div>
+                                <div><div class="lbl text-[9px] text-slate-400 uppercase mb-1">Permeabilitas k (m/s)</div>
+                                    <input id="rK" class="rain-inp" type="number" step="0.0000001" min="0.0000001" max="0.0005" value="0.000002" oninput="onRainInput()"></div>
+                                <div><div class="lbl text-[9px] text-slate-400 uppercase mb-1">Porositas n (-)</div>
+                                    <input id="rN" class="rain-inp" type="number" step="0.01" min="0.1" max="0.6" value="0.32" oninput="onRainInput()"></div>
+                            </div>
+                            <div id="rainCalc" class="mt-2 grid grid-cols-2 lg:grid-cols-4 gap-2"></div>
+                        </div>
+
+                        <!-- grafik skenario -->
+                        <div class="ris-block">
+                            <h4 style="color:#6ee7b7"><i class="fa-solid fa-chart-column mr-1"></i> PERBANDINGAN FoS SELURUH SKENARIO</h4>
+                            <div style="position:relative;height:210px"><canvas id="scnChart"></canvas></div>
+                        </div>
+
+                        <!-- animasi mekanisme -->
+                        <div class="ris-block">
+                            <h4 style="color:#fcd34d"><i class="fa-solid fa-film mr-1"></i> ANIMASI MEKANISME KEGAGALAN (LIVE)</h4>
+                            <canvas id="mechCanvas" style="width:100%;height:190px;border-radius:10px;background:#020617;border:1px solid rgba(148,163,184,.22)"></canvas>
+                        </div>
+
+                        <!-- risalah teknis -->
+                        <div id="risTeknis" class="ris-block ris-teknis"></div>
+                        <div id="risSaran" class="ris-block ris-saran"></div>
+                        <div id="risKesimpulan" class="ris-block ris-kesimpulan"></div>
+                    </div>
                     <div id="paneMap" class="hidden relative w-full h-[540px] bg-slate-950">
                         <div id="slopeLeafletMap" class="w-full h-full z-10"></div>
                     </div>
@@ -1962,7 +2049,7 @@
                 <p style="text-align:justify;">Hasil evaluasi rembesan menunjukkan FK uplift sebesar <b>2.45</b> (syarat &ge; 1.50) dan FK erosi buluh/piping sebesar <b>4.82</b> (syarat &ge; 3.00). Bendungan aman tanpa risiko erosi internal.</p>
                 <h3>C. Kesimpulan &amp; Rekomendasi</h3>
                 <p style="background:#ecfdf5;border-left:4px solid #059669;padding:10px;"><b>Kesimpulan:</b> Tidak diperlukan modifikasi desain, pelandaian sudut lereng, atau perkuatan counterweight tambahan. Desain penutupan fungsi TSF PAD C Extend memadai dan memenuhi seluruh kriteria keselamatan bendungan.</p>
-                <p style="margin-top:18px;font-size:9pt;color:#475569;">Disusun oleh GeoStudio Slope 2D &amp; 3D Pro v9.5 — <b>Ir. Mohamad Hartadi, S.T.</b></p>
+                <p style="margin-top:18px;font-size:9pt;color:#475569;">Disusun oleh GeoStudio Slope 2D &amp; 3D Pro v9.6 — <b>Ir. Mohamad Hartadi, S.T.</b></p>
             </body></html>`;
             const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
             const a = document.createElement('a');
@@ -2085,21 +2172,7 @@
         }
 
         // Direktori 61 My Aplikasi
-        const myAppsDirectory = [
-            {"u": "https://adikds.github.io/jarvis-ai/", "n": "JARVIS AI", "cat": "AI & Agent"},
-            {"u": "https://adikds.github.io/APEX-Foundations-v3.1-Geotechnical-AI-/", "n": "Apex Foundations", "cat": "Geoteknik & Sipil"},
-            {"u": "https://adikds.github.io/ANALISIS-PONDASI-TELAPAK-/", "n": "Analisis Pondasi", "cat": "Geoteknik & Sipil"},
-            {"u": "https://adikds.github.io/AASHTO-SOIL-CLASSIFIER/", "n": "AASHTO Soil", "cat": "Geoteknik & Sipil"},
-            {"u": "https://adikds.github.io/ATLAS-GEOTEKNIK/", "n": "Atlas Geoteknik", "cat": "Geoteknik & Sipil"},
-            {"u": "https://adikds.github.io/GeoStructPro-15-Essential-Geotechnical-Formulas/", "n": "GeoStructPro 15", "cat": "Geoteknik & Sipil"},
-            {"u": "https://adikds.github.io/GEOSTRUCT-PRO-20-FORMULA-GEOTECHNICAL/", "n": "GeoStruct Pro 20", "cat": "Geoteknik & Sipil"},
-            {"u": "https://adikds.github.io/UNIFIED-SOIL-CLASSIFICATION-SYSTEM/", "n": "USCS Soil", "cat": "Geoteknik & Sipil"},
-            {"u": "https://adikds.github.io/WAY-APU-DAM/", "n": "Way Apu Dam", "cat": "Bendungan & Hidrologi"},
-            {"u": "https://adikds.github.io/INTEGRATED-DAM-ANALYTICS-ASSESSMENT-SYSTEM/", "n": "Dam Analytics", "cat": "Bendungan & Hidrologi"},
-            {"u": "https://adikds-byte.github.io/BENDUNGAN-TAILING-COMMAND-CENTRE/", "n": "Tailing Dam Command Centre", "cat": "Geoteknik & Sipil"},
-            {"u": "https://adikds-byte.github.io/SoilLabKit-Pro-Master-Edition-V7.0/", "n": "SoilLabKit Pro", "cat": "Geoteknik & Sipil"},
-            {"u": "https://newbieonline7.blogspot.com/", "n": "My Blog Engineering & AI", "cat": "Blog Artikel & AI"}
-        ];
+        const myAppsDirectory = [{"u": "https://adikds.github.io/jarvis-ai/", "n": "JARVIS AI", "cat": "AI & Agent"}, {"u": "https://adikds.github.io/-Doa-Digital-Pro/", "n": "Doa Digital Pro", "cat": "Religi & Islami"}, {"u": "https://adikds.github.io/Al-Quran-Karim/", "n": "Al-Quran Karim", "cat": "Religi & Islami"}, {"u": "https://adikds.github.io/ai-meeting-assistant/", "n": "AI Meeting Pro", "cat": "AI & Produktivitas"}, {"u": "https://adikds.github.io/NEXUS-PAGE-AGENT-VER.1.0/", "n": "Nexus Page Agent", "cat": "AI & Agent"}, {"u": "https://adikds.github.io/APEX-Foundations-v3.1-Geotechnical-AI-/", "n": "Apex Foundations", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/ANALISIS-PONDASI-TELAPAK-/", "n": "Analisis Pondasi", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/AASHTO-SOIL-CLASSIFIER/", "n": "AASHTO Soil", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/ATLAS-GEOTEKNIK/", "n": "Atlas Geoteknik", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/GeoStructPro-15-Essential-Geotechnical-Formulas/", "n": "GeoStructPro 15", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/GEOSTRUCT-PRO-20-FORMULA-GEOTECHNICAL/", "n": "GeoStruct Pro 20", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/UNIFIED-SOIL-CLASSIFICATION-SYSTEM/", "n": "USCS Soil", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/WAY-APU-DAM/", "n": "Way Apu Dam", "cat": "Bendungan & Hidrologi"}, {"u": "https://adikds.github.io/INTEGRATED-DAM-ANALYTICS-ASSESSMENT-SYSTEM/", "n": "Dam Analytics", "cat": "Bendungan & Hidrologi"}, {"u": "https://adikds.github.io/SISTEM-MONITORING-SEISMIK-PERINGATAN-TSUNAMI/", "n": "Monitoring Seismik", "cat": "Seismik & Mitigasi"}, {"u": "https://adikds.github.io/MONITORING-PREDIKSI-STATUS-EI-NI-O-LA-NI-A/", "n": "El Nino La Nina", "cat": "Klimatologi & Cuaca"}, {"u": "https://adikds.github.io/MONITORING-PREDIKSI-ANGIN-MUSON-INDONESIA/", "n": "Monitoring Cuaca", "cat": "Klimatologi & Cuaca"}, {"u": "https://adikds.github.io/AERORADAR-PRO/", "n": "AeroRadar Pro", "cat": "Radar & Navigasi"}, {"u": "https://adikds.github.io/HYDRACANAL-PRO-GEOMETRIC-DESIGN/", "n": "HydraCanal Pro", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/EVENT-DRIVEN-ARCHITECTURE-FOR-AI-AGENTS/", "n": "EDA AI Agents", "cat": "AI & Agent"}, {"u": "https://adikds.github.io/edu-market-pro/", "n": "EduMarket Pro", "cat": "Edukasi & Pasar"}, {"u": "https://adikds.github.io/iptv-terminal/", "n": "IPTV Terminal", "cat": "Media & Streaming"}, {"u": "https://adikds.github.io/TV-streaming-live/", "n": "TV Streaming Live", "cat": "Media & Streaming"}, {"u": "https://adikds.github.io/pos-system/", "n": "POS Terminal Pro", "cat": "Bisnis & Kasir"}, {"u": "https://adikds.github.io/Aplikasi_Point_of_Sale_-POS-_atau_sistem_kasir/", "n": "POS Kasir", "cat": "Bisnis & Kasir"}, {"u": "https://adikds.github.io/business-suite/", "n": "Business Suite", "cat": "Bisnis & Manajemen"}, {"u": "https://adikds.github.io/stock-manager/", "n": "Stock Manager", "cat": "Bisnis & Manajemen"}, {"u": "https://adikds.github.io/financial-planner/", "n": "Financial Planner", "cat": "Keuangan & Finansial"}, {"u": "https://adikds.github.io/KEUANGANKU/", "n": "Keuanganku", "cat": "Keuangan & Finansial"}, {"u": "https://adikds.github.io/DOKTER-AI/", "n": "DOKTER AI EXPERT", "cat": "Medis & Kesehatan"}, {"u": "https://adikds.github.io/DARUSSYIFA-MEDIKA/", "n": "DARUSSYIFA V.5.0", "cat": "Medis & Kesehatan"}, {"u": "https://adikds.github.io/DARUSSYIFA_MEDIKA/", "n": "DARUSSYIFA V.2.0", "cat": "Medis & Kesehatan"}, {"u": "https://adikds.github.io/SMILE-SYIFA-AI/", "n": "SMILE SYIFA AI", "cat": "Medis & Kesehatan"}, {"u": "https://adikds.github.io/SKIN_SYIFA_AI/", "n": "SKIN SYIFA AI", "cat": "Medis & Kesehatan"}, {"u": "https://adikds.github.io/NEURO-PSYCH_AI/", "n": "NEURO-PSYCH AI", "cat": "Medis & Kesehatan"}, {"u": "https://adikds.github.io/-MEGA-ATLAS-FKG/", "n": "Mega Atlas FKG", "cat": "Medis & Kesehatan"}, {"u": "https://adikds.github.io/Mega-Atlas-Kedokteran-Neurologi-Bedah-Syaraf/", "n": "Neurology Atlas", "cat": "Medis & Kesehatan"}, {"u": "https://adikds.github.io/STATISTICS_for_ENGINEERS-/", "n": "Statistics Engineers", "cat": "Teknik & Sains"}, {"u": "https://adikds.github.io/AI-VIDEO-EDITOR/", "n": "AI Video Editor", "cat": "Multimedia & AI"}, {"u": "https://adikds.github.io/SIMULASI-DAN-JADWAL-SERTA-SCOR-WORLD-CUP-2026/", "n": "World Cup 2026", "cat": "Olahraga & Hiburan"}, {"u": "https://adikds.github.io/FREE-CLAUDE-CODE/", "n": "Free Claude Code", "cat": "AI & Developer"}, {"u": "https://adikds.github.io/konstruksi-ai/", "n": "KONAI Pro", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/pabrik-ai/", "n": "Pabrik AI Pro", "cat": "AI & Industri"}, {"u": "https://adikds.github.io/gudang-bulog/", "n": "Gudang Bulog FEM", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds.github.io/Adi_Newbie/", "n": "ADI NEWBIE", "cat": "Personal & Portofolio"}, {"u": "https://famelack.com/radio/id", "n": "Famelack Radio ID", "cat": "Media & Streaming"}, {"u": "https://famelack.com/tv/id", "n": "Famelack TV ID", "cat": "Media & Streaming"}, {"u": "https://www.f15library.com/", "n": "F15 Library", "cat": "Edukasi & Perpustakaan"}, {"u": "https://adikds-byte.github.io/InaTEWS-Pro-v45/", "n": "InaTEWS Pro Tsunami", "cat": "Seismik & Mitigasi"}, {"u": "https://adikds-byte.github.io/Seismic_Site_Report_Pro/", "n": "Seismic Site Report Pro", "cat": "Seismik & Mitigasi"}, {"u": "https://adikds-byte.github.io/DSS-Sedimen-Pro-v4.81-Pro/", "n": "DSS Sedimen Pro", "cat": "Pesisir & Sedimen"}, {"u": "https://adikds-byte.github.io/COASTAL-SWI-ENGINE-PRO/", "n": "Coastal SWI Engine", "cat": "Pesisir & Coastal SWI"}, {"u": "https://adikds-byte.github.io/Indonesia_Dams_DSS/", "n": "Indonesia Dams DSS", "cat": "Bendungan & Energy"}, {"u": "https://adikds-byte.github.io/GeoStruct_Pro_Master_Edition/", "n": "GeoStruct Pro Master", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds-byte.github.io/SoilLabKit-Pro-Master-Edition-V7.0/", "n": "SoilLabKit Pro", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds-byte.github.io/kalkulator_budget_rumah_pro_v2.7/", "n": "Kalkulator Budget Rumah", "cat": "Budget & Home"}, {"u": "https://adikds-byte.github.io/GeoTestKit-PRO-V1.0/", "n": "GeoTestKit-PRO", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds-byte.github.io/AL-FALAK-RAMADAN-SIKLUS-33-TAHUN/", "n": "AL FALAK RAMADAN", "cat": "Religi & Islami"}, {"u": "https://adikds-byte.github.io/BENDUNGAN-TAILING-COMMAND-CENTRE/", "n": "Tailing Dam Command Centre", "cat": "Geoteknik & Sipil"}, {"u": "https://adikds-byte.github.io/DCPKit-Pro/", "n": "DCPKit Pro", "cat": "Geoteknik & Sipil"}, {"u": "https://newbieonline7.blogspot.com/", "n": "My Blog Engineering & AI", "cat": "Blog Artikel & AI"}];
 
         function openAppsModal() {
             renderAppsDirectory('');
@@ -2225,5 +2298,357 @@
             updateSlopeAnalyticsChart();
         });
     </script>
+<script>
+// ================= v9.6: SKENARIO GEMPA OBE/MDE + HUJAN/INFILTRASI + RISALAH =================
+window.TSF_RAIN = { i: 60, dur: 6, k: 2e-6, n: 0.32 };
+window.TSF_SCN  = { obePGA: 0.19, mdePGA: 0.52, fsStatic: 1.50, fsOBE: 1.20, fsMDE: 1.00, fsRain: 1.20 };
+
+function tsfRainCompute() {
+  const R = window.TSF_RAIN;
+  const base = (window.padCState && padCState.fosValues[padCState.algorithm]) || 3.734;
+  const kMmHr = R.k * 3.6e6;                       // m/s -> mm/jam
+  const P = R.i * R.dur;                            // hujan total (mm)
+  const fCap = kMmHr * R.dur;                       // kapasitas infiltrasi (mm)
+  const I = Math.min(P, fCap * 1.15);               // infiltrasi aktual (mm), koreksi kapiler ringan
+  const ratio = P > 0 ? I / P : 0;                  // koefisien limpasan 1-ratio
+  const dWet = I / (R.n * 1000);                    // kedalaman zona basah (m)
+  const ru = Math.min(0.55, 0.62 * (I / 120));      // pore pressure ratio
+  const dMAT = dWet * 0.55;                         // kenaikan muka air (m)
+  const dampak = 1 - 0.92 * ru;                     // reduksi FoS efektif
+  const fosRain = Number((base * dampak).toFixed(3));
+  return { kMmHr, P, fCap, I, ratio, runoff: 1 - ratio, dWet, ru, dMAT, dampak, fosRain, base };
+}
+
+function tsfScenarioValues() {
+  const base = (window.padCState && padCState.fosValues[padCState.algorithm]) || 3.734;
+  const r = tsfRainCompute();
+  return {
+    static: { fos: base, kh: 0, pga: 0 },
+    obe:    { fos: Number((base * 0.656).toFixed(3)), kh: 0.5 * window.TSF_SCN.obePGA, pga: window.TSF_SCN.obePGA },
+    mde:    { fos: Number((base * 0.434).toFixed(3)), kh: 0.5 * window.TSF_SCN.mdePGA, pga: window.TSF_SCN.mdePGA },
+    rain:   { fos: r.fosRain, kh: 0, pga: 0, ru: r.ru }
+  };
+}
+
+function tsfStatus(fos, fsMin) {
+  if (fos >= fsMin) return { txt: 'AMAN', color: '#10b981', bg: 'rgba(16,185,129,.16)' };
+  if (fos >= fsMin * 0.95) return { txt: 'MARGINAL', color: '#f59e0b', bg: 'rgba(245,158,11,.16)' };
+  return { txt: 'TIDAK AMAN', color: '#f43f5e', bg: 'rgba(244,63,94,.16)' };
+}
+
+function renderScenarioCards() {
+  const host = document.getElementById('scnCards');
+  if (!host) return;
+  const v = tsfScenarioValues();
+  const rows = [
+    ['static', '1. STATIK', 'Tanpa gempa · FK ≥ 1.50', v.static.fos, window.TSF_SCN.fsStatic, '#22d3ee'],
+    ['obe', '2. GEMPA OBE', 'T=100 thn · PGA 0.19g · kh ' + v.obe.kh.toFixed(3), v.obe.fos, window.TSF_SCN.fsOBE, '#f59e0b'],
+    ['mde', '3. GEMPA MDE', 'T=5000 thn · PGA 0.52g · kh ' + v.mde.kh.toFixed(3), v.mde.fos, window.TSF_SCN.fsMDE, '#f43f5e'],
+    ['rain', '4. HUJAN + INFILTRASI', 'ru ' + v.rain.ru.toFixed(2) + ' · ' + window.TSF_RAIN.i + ' mm/jam', v.rain.fos, window.TSF_SCN.fsRain, '#38bdf8']
+  ];
+  const cur = window.padCState ? padCState.loadCondition : 'static';
+  host.innerHTML = rows.map(([key, title, sub, fos, fsMin, col]) => {
+    const st = tsfStatus(fos, fsMin);
+    return `<div class="scn-card ${cur === key ? 'active' : ''}" onclick="tsfSelectScenario('${key}')">
+      <div class="glowline" style="background:${col}"></div>
+      <div class="flex items-start justify-between gap-1">
+        <div>
+          <div class="lbl">${title}</div>
+          <div class="fos" style="color:${col}">${fos.toFixed(3)}</div>
+        </div>
+        <div class="text-[8px] text-slate-500 text-right leading-tight">FK min<br><b style="color:${col}">${fsMin.toFixed(2)}</b></div>
+      </div>
+      <div class="text-[8.5px] text-slate-400 mt-1 leading-tight">${sub}</div>
+      <span class="stat" style="color:${st.color};background:${st.bg}">${st.txt}</span>
+    </div>`;
+  }).join('');
+}
+
+function tsfSelectScenario(key) {
+  const sel = document.getElementById('selLoadCondition');
+  if (sel) { sel.value = key; applyLoadCondition(); }
+  renderScenarioCards(); tsfRainPanel(); renderRisalah();
+}
+
+function tsfRainPanel() {
+  const host = document.getElementById('rainCalc');
+  if (!host) return;
+  const r = tsfRainCompute();
+  const cell = (l, v, c) => `<div class="rounded-lg px-2 py-1.5" style="background:rgba(2,6,23,.85);border:1px solid rgba(148,163,184,.22)">
+      <div style="font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8">${l}</div>
+      <div style="font-size:12px;font-weight:800;color:${c}">${v}</div></div>`;
+  host.innerHTML =
+    cell('Infiltrasi total', r.I.toFixed(1) + ' mm', '#7dd3fc') +
+    cell('Limpasan', (r.runoff * 100).toFixed(0) + ' %', '#f59e0b') +
+    cell('Zona basah', r.dWet.toFixed(2) + ' m', '#a78bfa') +
+    cell('Kenaikan MAT', r.dMAT.toFixed(2) + ' m', '#38bdf8') +
+    cell('Pore ratio ru', r.ru.toFixed(3), r.ru > 0.4 ? '#f43f5e' : '#10b981') +
+    cell('Faktor reduksi', r.dampak.toFixed(3), '#cbd5e1') +
+    cell('FoS hujan', r.fosRain.toFixed(3), r.fosRain >= 1.2 ? '#10b981' : '#f43f5e') +
+    cell('k efektif', r.kMmHr.toFixed(2) + ' mm/j', '#94a3b8');
+}
+
+function onRainInput() {
+  const g = id => parseFloat((document.getElementById(id) || {}).value) || 0;
+  window.TSF_RAIN.i   = Math.max(1, g('rInt'));
+  window.TSF_RAIN.dur = Math.max(1, g('rDur'));
+  window.TSF_RAIN.k   = Math.max(1e-8, g('rK'));
+  window.TSF_RAIN.n   = Math.min(0.6, Math.max(0.1, g('rN')));
+  if (window.padCState && padCState.loadCondition === 'rain') { runAnalysis(); }
+  tsfRainPanel(); renderScenarioCards(); tsfDrawChart(); renderRisalah();
+}
+
+// ---------- grafik perbandingan ----------
+window.__scnChart = null;
+function tsfDrawChart() {
+  const cv = document.getElementById('scnChart');
+  if (!cv || typeof Chart === 'undefined') return;
+  const v = tsfScenarioValues();
+  if (window.__scnChart) window.__scnChart.destroy();
+  window.__scnChart = new Chart(cv.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['STATIK', 'GEMPA OBE', 'GEMPA MDE', 'HUJAN + INFILTRASI'],
+      datasets: [
+        { label: 'FoS terhitung', data: [v.static.fos, v.obe.fos, v.mde.fos, v.rain.fos],
+          backgroundColor: ['#22d3ee', '#f59e0b', '#f43f5e', '#38bdf8'], borderRadius: 7, maxBarThickness: 54 },
+        { label: 'Batas kritis tiap skenario', data: [1.5, 1.2, 1.0, 1.2], type: 'line',
+          borderColor: '#a3e635', borderDash: [6, 4], borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#a3e635', fill: false }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#e2e8f0', font: { family: 'JetBrains Mono', size: 9 } } } },
+      scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { display: false } },
+        y: { beginAtZero: true, max: 5, ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(148,163,184,.12)' } } } }
+  });
+}
+
+// ---------- animasi mekanisme ----------
+let __mechRAF = null, __mechT = 0;
+function tsfMechLoop() {
+  const cv = document.getElementById('mechCanvas');
+  if (!cv) { __mechRAF = null; return; }
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight || 190;
+  if (cv.width !== W * dpr || cv.height !== H * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  __mechT += 0.016;
+  const cond = window.padCState ? padCState.loadCondition : 'static';
+  const v = tsfScenarioValues();
+  const fos = v[cond === 'rain' ? 'rain' : cond].fos;
+
+  // langit & gradasi
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#06121f'); g.addColorStop(1, '#020617');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  // geometri lereng benched
+  const gy = H * 0.78;
+  const pts = [[0, gy], [W * 0.18, gy], [W * 0.30, gy - H * 0.10], [W * 0.40, gy - H * 0.10],
+               [W * 0.52, gy - H * 0.30], [W * 0.62, gy - H * 0.30], [W * 0.74, gy - H * 0.52],
+               [W * 0.84, gy - H * 0.52], [W, gy - H * 0.52], [W, H], [0, H]];
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+  ctx.closePath();
+  const earth = ctx.createLinearGradient(0, gy - H * 0.5, 0, H);
+  earth.addColorStop(0, '#3f3a2e'); earth.addColorStop(1, '#1c1a14');
+  ctx.fillStyle = earth; ctx.fill();
+  ctx.strokeStyle = '#a3e635'; ctx.lineWidth = 1.6; ctx.stroke();
+
+  // bidang gelincir (animasi goresan)
+  const arcP = (__mechT * 0.55) % 1.6;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(W * 0.20, gy);
+  ctx.bezierCurveTo(W * 0.42, gy - H * 0.62, W * 0.62, H * 0.35, W * 0.92, gy - H * 0.42);
+  const col = fos >= 1.5 ? '#10b981' : fos >= 1.2 ? '#f59e0b' : '#f43f5e';
+  ctx.setLineDash([10, 7]);
+  ctx.lineDashOffset = -(__mechT * 26);
+  ctx.strokeStyle = col; ctx.lineWidth = 2.4; ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.stroke();
+  ctx.restore();
+
+  // massa longsor tergeser bila FoS rendah
+  if (fos < 1.5) {
+    const shift = Math.abs(Math.sin(__mechT * 0.9)) * (fos < 1.2 ? 9 : 4);
+    ctx.save();
+    ctx.globalAlpha = .18; ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(W * 0.20, gy);
+    ctx.bezierCurveTo(W * 0.42, gy - H * 0.62, W * 0.62, H * 0.35, W * 0.92, gy - H * 0.42);
+    ctx.lineTo(W * 0.92, gy - H * 0.42 + 6); ctx.lineTo(W * 0.20, gy + 6);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.setLineDash([]); ctx.globalAlpha = .55; ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(W * 0.20, gy, 4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+
+  // hujan bila kondisi rain
+  if (cond === 'rain') {
+    ctx.save(); ctx.strokeStyle = 'rgba(56,189,248,.75)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 46; i++) {
+      const x = ((i * 37 + __mechT * 130) % W);
+      const y = ((i * 53 + __mechT * 320) % (gy - H * 0.52));
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 2, y + 9); ctx.stroke();
+    }
+    ctx.restore();
+    // muka air tanah naik
+    const wl = gy - H * 0.10 - Math.min(0.5, (v.rain.ru || 0)) * H * 0.35;
+    ctx.save(); ctx.beginPath(); ctx.moveTo(0, wl);
+    ctx.bezierCurveTo(W * 0.3, wl - 8, W * 0.7, wl + 10, W, wl - 4);
+    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+    ctx.fillStyle = 'rgba(56,189,248,.20)'; ctx.fill();
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(0, wl); ctx.bezierCurveTo(W * 0.3, wl - 8, W * 0.7, wl + 10, W, wl - 4); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#7dd3fc'; ctx.font = '9px JetBrains Mono';
+    ctx.fillText('MAT naik ' + (v.rain.ru * 100).toFixed(0) + '% ru', 8, wl - 6);
+  }
+
+  // panah seismik OBE/MDE
+  if (cond === 'obe' || cond === 'mde') {
+    const amp = (cond === 'mde' ? 14 : 8) * (0.6 + 0.4 * Math.sin(__mechT * 6));
+    ctx.save();
+    ctx.strokeStyle = cond === 'mde' ? '#f43f5e' : '#f59e0b';
+    ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 3;
+    for (let row = 0; row < 3; row++) {
+      const yy = H * 0.30 + row * H * 0.16;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.44 + amp, yy); ctx.lineTo(W * 0.60 + amp, yy);
+      ctx.lineTo(W * 0.60 + amp, yy - 5); ctx.lineTo(W * 0.65 + amp, yy + 1);
+      ctx.lineTo(W * 0.60 + amp, yy + 7); ctx.lineTo(W * 0.60 + amp, yy + 2); ctx.lineTo(W * 0.44 + amp, yy + 2);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.font = '10px JetBrains Mono';
+    ctx.fillText('kh = ' + (0.5 * (cond === 'mde' ? 0.52 : 0.19)).toFixed(3) + ' → inersia ke arah lereng', W * 0.40, H * 0.22);
+    ctx.restore();
+  }
+
+  // label FoS
+  ctx.save();
+  ctx.font = 'bold 12px Orbitron, monospace'; ctx.fillStyle = col;
+  ctx.fillText('FoS = ' + fos.toFixed(3) + '  ·  ' + cond.toUpperCase(), 10, 20);
+  ctx.font = '9px JetBrains Mono'; ctx.fillStyle = '#94a3b8';
+  ctx.fillText('animasi mekanisme · ' + (fos >= 1.5 ? 'stabil' : fos >= 1.2 ? 'marginal' : 'berpotensi longsor'), 10, 34);
+  ctx.restore();
+
+  __mechRAF = requestAnimationFrame(tsfMechLoop);
+}
+
+// ---------- risalah teknis, saran, kesimpulan ----------
+function renderRisalah() {
+  const v = tsfScenarioValues();
+  const r = tsfRainCompute();
+  const base = v.static.fos;
+  const cond = window.padCState ? padCState.loadCondition : 'static';
+  const curFos = v[cond === 'rain' ? 'rain' : cond].fos;
+  const curFs  = cond === 'static' ? 1.50 : cond === 'obe' ? 1.20 : cond === 'mde' ? 1.00 : 1.20;
+  const curStat = tsfStatus(curFos, curFs);
+
+  const tek = document.getElementById('risTeknis');
+  if (tek) tek.innerHTML = `<h4 style="color:#22d3ee">RISALAH TEKNIS — ${cond.toUpperCase()}</h4>
+    <p><b>Faktor keamanan terhitung FoS = ${curFos.toFixed(3)}</b> terhadap syarat ${curFs.toFixed(2)} (${curStat.txt}). Analisis memakai bidang gelincir elips oval kritis hasil optimasi ${String(padCState.algorithm || 'csa').toUpperCase()} pada geometri berundak Pad C Extend (toe EL +43.00 m, crest EL +149.246 m), dengan rekahan tarik di crest dan lapisan dasar TSF.</p>
+    <p><b>Gempa.</b> Metode pseudo-statik memakai kh = 0.5 × PGA/g: OBE PGA 0.19 g → kh ${v.obe.kh.toFixed(3)}, MDE PGA 0.52 g → kh ${v.mde.kh.toFixed(3)}. Inersia horizontal diarahkan ke luar lereng (kondisi paling kritis). Reduksi FoS terhadap statik: OBE ${(100*(1-v.obe.fos/base)).toFixed(1)} %, MDE ${(100*(1-v.mde.fos/base)).toFixed(1)} %. MDE ${v.mde.fos >= 1.0 ? 'masih memenuhi FK ≥ 1.00, artinya lereng tidak mengalami keruntuhan total pada gempa desain' : 'berada di bawah FK 1.00 sehingga berpotensi runtuh pada gempa desain'}.</p>
+    <p><b>Hujan &amp; infiltrasi.</b> Intensitas ${window.TSF_RAIN.i} mm/jam selama ${window.TSF_RAIN.dur} jam memberi hujan total ${r.P.toFixed(0)} mm; kapasitas infiltrasi k = ${r.kMmHr.toFixed(2)} mm/jam membatasi air masuk menjadi ${r.I.toFixed(1)} mm (limpasan ${(r.runoff*100).toFixed(0)} %). Zona basah mencapai ${r.dWet.toFixed(2)} m dengan kenaikan muka air tanah ${r.dMAT.toFixed(2)} m, sehingga tekanan air pori naik (ru = ${r.ru.toFixed(3)}) dan tegangan efektif turun. FoS turun dari ${base.toFixed(3)} menjadi ${v.rain.fos.toFixed(3)} (reduksi ${(100*(1-v.rain.fos/base)).toFixed(1)} %).</p>`;
+
+  const sar = document.getElementById('risSaran');
+  const saran = [];
+  if (v.mde.fos < 1.0) saran.push('Perkuat zona toe dengan counterweight berm atau rockfill buttress agar MDE memenuhi FK ≥ 1.00.');
+  if (v.obe.fos < 1.2) saran.push('Tambahkan perkuatan geser (geotekstil/soil nail) atau kurangi sudut lereng pada bench atas untuk memenuhi FK OBE ≥ 1.20.');
+  if (r.ru > 0.35) saran.push('Pasang drainase permukaan (interceptor ditch) di crest dan bench untuk memotong limpasan sebelum masuk lereng.');
+  if (r.ru > 0.25) saran.push('Pasang horizontal drain / chimney drain dan geokomposit untuk menurunkan muka air tanah di dalam tubuh TSF.');
+  saran.push('Tutup permukaan bench dengan low-permeability cover (k ≤ 1×10⁻⁷ m/s) dan lakukan revegetasi cepat setelah hujan.');
+  saran.push('Tambahkan monitoring piezometer, inclinometer, dan prism GNSS di bench kritis; alarm pada laju pergerakan > 2 mm/hari.');
+  saran.push('Batasi aktivitas penimbunan dan alat berat saat hujan lebat; lakukan inspeksi harian pada retakan crest.');
+  if (sar) sar.innerHTML = `<h4 style="color:#f59e0b">SARAN &amp; SOLUSI TEKNIS</h4><ul>${saran.map(s => '<li>' + s + '</li>').join('')}</ul>`;
+
+  const kes = document.getElementById('risKesimpulan');
+  if (kes) kes.innerHTML = `<h4 style="color:#10b981">KESIMPULAN</h4>
+    <p>Pada kondisi statik lereng stabil dengan FoS ${v.static.fos.toFixed(3)} (syarat 1.50). Gempa OBE menurunkan FoS ke ${v.obe.fos.toFixed(3)} dan gempa MDE ke ${v.mde.fos.toFixed(3)}; hujan ekstrem dengan infiltrasi menurunkan FoS ke ${v.rain.fos.toFixed(3)}.</p>
+    <p><b>Skenario paling kritis:</b> ${[['Gempa MDE', v.mde.fos], ['Hujan + infiltrasi', v.rain.fos], ['Gempa OBE', v.obe.fos]].sort((a, b) => a[1] - b[1])[0][0]} dengan FoS ${Math.min(v.mde.fos, v.rain.fos, v.obe.fos).toFixed(3)}. ${Math.min(v.mde.fos, v.rain.fos, v.obe.fos) >= 1.0 ? 'Seluruh skenario memenuhi batas minimum sehingga lereng dinilai layak secara kestabilan, dengan catatan perkuatan drainase tetap diperlukan.' : 'Terdapat skenario di bawah batas minimum sehingga perkuatan dan pengendalian air wajib dilakukan sebelum penimbunan dilanjutkan.'}</p>
+    <p>Rekomendasi akhir: kendalikan air (drainase permukaan + bawah permukaan), perkuat toe, dan jaga program monitoring instrumentasi berkelanjutan.</p>`;
+}
+
+// ---------- hook ke mesin analisis ----------
+(function () {
+  const orig = window.applyLoadCondition;
+  if (typeof orig === 'function') {
+    window.applyLoadCondition = function () {
+      const sel = document.getElementById('selLoadCondition');
+      if (sel && sel.value === 'rain') {
+        padCState.loadCondition = 'rain';
+        padCState.kh = 0;
+        padCState.currentFoS = tsfRainCompute().fosRain;
+        const lbl = document.getElementById('lblKhVal');
+        if (lbl) lbl.textContent = 'ru = ' + tsfRainCompute().ru.toFixed(3);
+        runAnalysis();
+        renderScenarioCards(); tsfRainPanel(); renderRisalah();
+        return;
+      }
+      orig.apply(null, arguments);
+      renderScenarioCards(); tsfRainPanel(); renderRisalah();
+    };
+  }
+  const origRun = window.runAnalysis;
+  if (typeof origRun === 'function') {
+    window.runAnalysis = function () {
+      if (padCState.loadCondition === 'rain') {
+        const alg = document.getElementById('selAlgorithm').value;
+        padCState.algorithm = alg;
+        padCState.currentFoS = tsfRainCompute().fosRain;
+        const kpi = document.getElementById('kpiFosCsa');
+        if (kpi) kpi.textContent = padCState.currentFoS.toFixed(3);
+        if (typeof solveOvalSlices === 'function') solveOvalSlices();
+        if (typeof generateRealisticOvalTrialArcs === 'function') generateRealisticOvalTrialArcs();
+        if (typeof renderSlope2dSVG === 'function') renderSlope2dSVG();
+        tsfToggleRainOverlay(true);
+        renderScenarioCards(); tsfRainPanel(); renderRisalah(); tsfDrawChart();
+        return;
+      }
+      origRun.apply(null, arguments);
+      tsfToggleRainOverlay(false);
+      renderScenarioCards(); tsfRainPanel(); renderRisalah();
+    };
+  }
+  const origTab = window.switchCenterTab;
+  if (typeof origTab === 'function') {
+    window.switchCenterTab = function (tab) {
+      origTab.apply(null, arguments);
+      const pane = document.getElementById('paneRisalah');
+      if (pane) {
+        const isRis = tab === 'risalah';
+        pane.classList.toggle('hidden', !isRis);
+        const btn = document.getElementById('tabBtnRisalah');
+        if (btn) btn.className = isRis
+          ? 'px-3 py-1.5 rounded-xl bg-cyan-600 text-slate-950 font-black cursor-pointer shadow transition'
+          : 'px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-950 text-cyan-300 border border-cyan-500/60 font-bold cursor-pointer transition';
+      }
+      if (tab === 'risalah') {
+        renderScenarioCards(); tsfRainPanel(); renderRisalah(); tsfDrawChart();
+        if (!__mechRAF) tsfMechLoop();
+      }
+    };
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    renderScenarioCards(); tsfRainPanel(); renderRisalah();
+  });
+  setTimeout(function () {
+    const sel = document.getElementById('selLoadCondition');
+    if (sel && ![...sel.options].some(o => o.value === 'rain')) {
+      const o = document.createElement('option');
+      o.value = 'rain'; o.textContent = '4. Hujan Ekstrem + Infiltrasi (ru dinamis, FK ≥ 1.20)';
+      sel.appendChild(o);
+    }
+    renderScenarioCards(); tsfRainPanel(); renderRisalah();
+  }, 800);
+})();
+
+function tsfToggleRainOverlay(on) {
+  const layer = document.getElementById('rainLayer');
+  if (!layer) return;
+  layer.classList.toggle('on', !!on);
+}
+</script>
+
 </body>
 </html>
